@@ -1,0 +1,6 @@
+[submodule "modules/platform"]
+	path = modules/platform
+	url = https://github.com/finosorg-labs/platform.git
+[submodule "modules/ds"]
+	path = modules/ds
+	url = https://github.com/finosorg-labs/ds.git
