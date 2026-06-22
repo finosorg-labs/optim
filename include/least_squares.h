@@ -31,15 +31,47 @@ extern "C" {
  *         -3 if matrix is rank deficient or QR decomposition fails
  *
  * Time complexity: O(n*p^2)
- * Space complexity: O(n*p) (modifies X in-place, uses additional O(n) temp space)
+ * Space complexity: O(n*p) (modifies X in-place, allocates O(n+p) temp space)
  * Thread safety: Thread-safe if inputs are not shared across threads
  *
  * @note The input matrix X is modified during computation (used as workspace).
  *       If you need to preserve X, pass a copy.
- * @note For n == p (square matrix), the function still works but consider
- *       using a direct linear solver instead.
+ * @note This function performs heap allocation for workspace. For better performance
+ *       in hot paths, use fc_optim_least_squares_work() with caller-provided workspace.
  */
 int fc_optim_least_squares(double* X, const double* y, size_t n, size_t p, double* beta);
+
+/**
+ * Solve ordinary least squares regression with caller-provided workspace.
+ *
+ * Same as fc_optim_least_squares() but uses caller-provided workspace to avoid
+ * heap allocation. This is significantly faster in hot paths and batch processing.
+ *
+ * @param X Design matrix in column-major order (n x p). Must be non-NULL.
+ * @param y Response vector (n x 1). Must be non-NULL.
+ * @param n Number of observations. Must be > 0 and >= p.
+ * @param p Number of predictors. Must be > 0.
+ * @param beta Output: regression coefficients (p x 1). Must be pre-allocated
+ *             by caller with size >= p. Must be non-NULL.
+ * @param work Workspace buffer. Must be pre-allocated with size >= (n + p) * sizeof(double).
+ *             Must be non-NULL.
+ * @return 0 on success, negative error code on failure
+ *
+ * Time complexity: O(n*p^2)
+ * Space complexity: O(n*p) (modifies X in-place, uses provided workspace)
+ * Thread safety: Thread-safe if inputs and workspace are not shared
+ *
+ * @note The input matrix X is modified during computation.
+ * @note Workspace layout: [tau: p doubles][qtb: n doubles]
+ */
+int fc_optim_least_squares_work(
+    double* X,
+    const double* y,
+    size_t n,
+    size_t p,
+    double* beta,
+    double* work
+);
 
 /**
  * Solve multiple independent least squares regressions in batch.
