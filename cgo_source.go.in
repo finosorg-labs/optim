@@ -20,7 +20,7 @@ package optim
 #cgo windows LDFLAGS: ${SRCDIR}/modules/platform/build/windows_amd64/libfinkit_platform_static.a -lm
 
 
-#include "xxx.h"
+#include "least_squares.h"
 
 // Platform sources (dependency)
 #include "simd_detect.c"
@@ -42,7 +42,7 @@ package optim
 #endif
 
 // optim sources
-#include "optim-c/xxx.c"
+#include "optim-c/least_squares.c"
 */
 import "C"
 

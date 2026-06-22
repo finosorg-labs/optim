@@ -25,7 +25,7 @@ target_link_libraries(bench_framework
 add_executable(optim_benchmarks
     bench_main.c
     bench_optim.c
-    bench_xxx.c
+    bench_least_squares.c
 )
 
 # Link with benchmark framework and optim library

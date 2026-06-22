@@ -1,0 +1,119 @@
+#ifndef FC_OPTIM_LEAST_SQUARES_H
+#define FC_OPTIM_LEAST_SQUARES_H
+
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Solve ordinary least squares regression using QR decomposition.
+ *
+ * Solves the linear regression problem: min ||y - X*beta||^2
+ * where X is the design matrix and y is the response vector.
+ *
+ * Uses QR decomposition with Householder reflections for numerical stability.
+ * This method is more numerically stable than normal equations, especially
+ * for ill-conditioned matrices.
+ *
+ * @param X Design matrix in column-major order (n x p), where n is the number
+ *          of observations and p is the number of predictors. Must be non-NULL.
+ * @param y Response vector (n x 1). Must be non-NULL.
+ * @param n Number of observations. Must be > 0 and >= p.
+ * @param p Number of predictors. Must be > 0.
+ * @param beta Output: regression coefficients (p x 1). Must be pre-allocated
+ *             by caller with size >= p. Must be non-NULL.
+ * @return 0 on success
+ *         -1 if any pointer is NULL
+ *         -2 if n <= 0 or p <= 0 or n < p
+ *         -3 if matrix is rank deficient or QR decomposition fails
+ *
+ * Time complexity: O(n*p^2)
+ * Space complexity: O(n*p) (modifies X in-place, uses additional O(n) temp space)
+ * Thread safety: Thread-safe if inputs are not shared across threads
+ *
+ * @note The input matrix X is modified during computation (used as workspace).
+ *       If you need to preserve X, pass a copy.
+ * @note For n == p (square matrix), the function still works but consider
+ *       using a direct linear solver instead.
+ */
+int fc_optim_least_squares(double* X, const double* y, size_t n, size_t p, double* beta);
+
+/**
+ * Solve multiple independent least squares regressions in batch.
+ *
+ * Efficiently solves batch_size independent regression problems, each with
+ * the same dimensions (n observations, p predictors). This is more efficient
+ * than calling fc_optim_least_squares() in a loop due to better cache usage.
+ *
+ * @param X Design matrices in column-major order (batch_size x n x p).
+ *          Each regression has its own n x p matrix. Must be non-NULL.
+ * @param y Response vectors (batch_size x n). Each regression has its own
+ *          n x 1 response vector. Must be non-NULL.
+ * @param n Number of observations per regression. Must be > 0 and >= p.
+ * @param p Number of predictors per regression. Must be > 0.
+ * @param batch_size Number of independent regressions to solve. Must be > 0.
+ * @param beta Output: regression coefficients (batch_size x p). Must be
+ *             pre-allocated by caller with size >= batch_size * p. Must be non-NULL.
+ * @return Number of successfully solved regressions (0 to batch_size)
+ *         Returns 0 if any pointer is NULL or dimensions are invalid
+ *
+ * Time complexity: O(batch_size * n * p^2)
+ * Space complexity: O(batch_size * n * p)
+ * Thread safety: Thread-safe if inputs are not shared across threads
+ *
+ * @note If a regression fails (e.g., rank deficiency), the corresponding beta
+ *       coefficients are set to 0.0 and the count is not incremented.
+ * @note Input matrices X are modified during computation.
+ */
+size_t fc_optim_least_squares_batch(
+    double* X,
+    const double* y,
+    size_t n,
+    size_t p,
+    size_t batch_size,
+    double* beta
+);
+
+/**
+ * Solve ordinary least squares regression and compute additional statistics.
+ *
+ * Extended version that computes regression coefficients plus residuals,
+ * R-squared, and residual standard error.
+ *
+ * @param X Design matrix in column-major order (n x p). Must be non-NULL.
+ * @param y Response vector (n x 1). Must be non-NULL.
+ * @param n Number of observations. Must be > 0 and >= p.
+ * @param p Number of predictors. Must be > 0.
+ * @param beta Output: regression coefficients (p x 1). Must be pre-allocated.
+ *             Must be non-NULL.
+ * @param residuals Output: residuals (n x 1), can be NULL if not needed.
+ *                  If non-NULL, must be pre-allocated with size >= n.
+ * @param r_squared Output: coefficient of determination (R^2), can be NULL.
+ * @param std_error Output: residual standard error, can be NULL.
+ * @return 0 on success, negative error code on failure (same as fc_optim_least_squares)
+ *
+ * Time complexity: O(n*p^2 + n*p)
+ * Space complexity: O(n*p)
+ * Thread safety: Thread-safe if inputs are not shared across threads
+ *
+ * @note Input matrix X is modified during computation.
+ */
+int fc_optim_least_squares_ext(
+    double* X,
+    const double* y,
+    size_t n,
+    size_t p,
+    double* beta,
+    double* residuals,
+    double* r_squared,
+    double* std_error
+);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

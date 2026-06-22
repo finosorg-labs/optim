@@ -6,6 +6,7 @@
 add_executable(optim_tests
     test_framework.c
     test_main.c
+    test_least_squares.c
 )
 
 # Link with optim library
