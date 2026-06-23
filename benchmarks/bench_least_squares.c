@@ -85,20 +85,20 @@ static void bench_ls_batch_reset(bench_ls_ctx_t* ctx) {
 static void bench_least_squares(void* user_data) {
     bench_ls_ctx_t* ctx = (bench_ls_ctx_t*)user_data;
     bench_ls_reset(ctx);
-    fc_optim_least_squares_work(ctx->X, ctx->y, ctx->n, ctx->p, ctx->beta, ctx->work);
+    fc_optim_least_squares_work(ctx->X, ctx->y, ctx->n, ctx->p, 0, ctx->beta, ctx->work);
 }
 
 static void bench_least_squares_batch(void* user_data) {
     bench_ls_ctx_t* ctx = (bench_ls_ctx_t*)user_data;
     bench_ls_batch_reset(ctx);
-    fc_optim_least_squares_batch(ctx->X, ctx->y, ctx->n, ctx->p, ctx->batch_size, ctx->beta);
+    fc_optim_least_squares_batch(ctx->X, ctx->y, ctx->n, ctx->p, ctx->batch_size, 0, ctx->beta);
 }
 
 static void bench_least_squares_ext(void* user_data) {
     bench_ls_ctx_t* ctx = (bench_ls_ctx_t*)user_data;
     bench_ls_reset(ctx);
     double r_squared, std_error;
-    fc_optim_least_squares_ext(ctx->X, ctx->y, ctx->n, ctx->p, ctx->beta, ctx->residuals, &r_squared,
+    fc_optim_least_squares_ext(ctx->X, ctx->y, ctx->n, ctx->p, 0, ctx->beta, ctx->residuals, &r_squared,
                                 &std_error);
 }
 

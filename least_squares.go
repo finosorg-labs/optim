@@ -24,30 +24,47 @@ var (
 //   - y: Response vector (n x 1)
 //   - n: Number of observations
 //   - p: Number of predictors
+//   - fitIntercept: If true, fit an intercept term; if false, force regression through origin
 //
 // Returns:
-//   - beta: Regression coefficients (p x 1)
+//   - beta: Regression coefficients. If fitIntercept=true: (p+1), beta[0]=intercept, beta[1:]=coefficients. If fitIntercept=false: (p)
 //   - error: nil on success, error otherwise
 //
 // Note: The input matrix X is modified during computation.
-func LeastSquares(X, y []float64, n, p int) ([]float64, error) {
+func LeastSquares(X, y []float64, n, p int, fitIntercept bool) ([]float64, error) {
 	if len(X) < n*p {
 		return nil, ErrInvalidDimensions
 	}
 	if len(y) < n {
 		return nil, ErrInvalidDimensions
 	}
-	if n <= 0 || p <= 0 || n < p {
+	if n <= 0 || p <= 0 {
+		return nil, ErrInvalidDimensions
+	}
+	if fitIntercept && n <= p {
+		return nil, ErrInvalidDimensions
+	}
+	if !fitIntercept && n < p {
 		return nil, ErrInvalidDimensions
 	}
 
-	beta := make([]float64, p)
+	betaSize := p
+	if fitIntercept {
+		betaSize = p + 1
+	}
+	beta := make([]float64, betaSize)
+
+	fitInterceptC := C.int(0)
+	if fitIntercept {
+		fitInterceptC = C.int(1)
+	}
 
 	ret := C.fc_optim_least_squares(
 		(*C.double)(unsafe.Pointer(&X[0])),
 		(*C.double)(unsafe.Pointer(&y[0])),
 		C.size_t(n),
 		C.size_t(p),
+		fitInterceptC,
 		(*C.double)(unsafe.Pointer(&beta[0])),
 	)
 
@@ -71,34 +88,57 @@ func LeastSquares(X, y []float64, n, p int) ([]float64, error) {
 //   - y: Response vector (n x 1)
 //   - n: Number of observations
 //   - p: Number of predictors
-//   - work: Workspace buffer with size >= (n + p)
+//   - fitIntercept: If true, fit an intercept term; if false, force regression through origin
+//   - work: Workspace buffer. If fitIntercept=true: size >= n*(p+1)+n+p+1. If fitIntercept=false: size >= n+p
 //
 // Returns:
-//   - beta: Regression coefficients (p x 1)
+//   - beta: Regression coefficients. If fitIntercept=true: (p+1), beta[0]=intercept, beta[1:]=coefficients. If fitIntercept=false: (p)
 //   - error: nil on success, error otherwise
 //
 // Note: The input matrix X is modified during computation.
-func LeastSquaresWork(X, y []float64, n, p int, work []float64) ([]float64, error) {
+func LeastSquaresWork(X, y []float64, n, p int, fitIntercept bool, work []float64) ([]float64, error) {
 	if len(X) < n*p {
 		return nil, ErrInvalidDimensions
 	}
 	if len(y) < n {
 		return nil, ErrInvalidDimensions
 	}
-	if len(work) < n+p {
-		return nil, ErrInvalidDimensions
+
+	requiredWorkSize := n + p
+	if fitIntercept {
+		requiredWorkSize = n*(p+1) + n + p + 1
 	}
-	if n <= 0 || p <= 0 || n < p {
+	if len(work) < requiredWorkSize {
 		return nil, ErrInvalidDimensions
 	}
 
-	beta := make([]float64, p)
+	if n <= 0 || p <= 0 {
+		return nil, ErrInvalidDimensions
+	}
+	if fitIntercept && n <= p {
+		return nil, ErrInvalidDimensions
+	}
+	if !fitIntercept && n < p {
+		return nil, ErrInvalidDimensions
+	}
+
+	betaSize := p
+	if fitIntercept {
+		betaSize = p + 1
+	}
+	beta := make([]float64, betaSize)
+
+	fitInterceptC := C.int(0)
+	if fitIntercept {
+		fitInterceptC = C.int(1)
+	}
 
 	ret := C.fc_optim_least_squares_work(
 		(*C.double)(unsafe.Pointer(&X[0])),
 		(*C.double)(unsafe.Pointer(&y[0])),
 		C.size_t(n),
 		C.size_t(p),
+		fitInterceptC,
 		(*C.double)(unsafe.Pointer(&beta[0])),
 		(*C.double)(unsafe.Pointer(&work[0])),
 	)
@@ -122,25 +162,41 @@ func LeastSquaresWork(X, y []float64, n, p int, work []float64) ([]float64, erro
 //   - n: Number of observations per regression
 //   - p: Number of predictors per regression
 //   - batchSize: Number of independent regressions
+//   - fitIntercept: If true, fit intercept terms; if false, force regression through origin
 //
 // Returns:
-//   - beta: Regression coefficients (batch_size x p)
+//   - beta: Regression coefficients. If fitIntercept=true: (batch_size x (p+1)). If fitIntercept=false: (batch_size x p)
 //   - successCount: Number of successfully solved regressions
 //   - error: nil on success, error otherwise
 //
 // Note: If a regression fails, the corresponding beta coefficients are set to 0.
-func LeastSquaresBatch(X, y []float64, n, p, batchSize int) ([]float64, int, error) {
+func LeastSquaresBatch(X, y []float64, n, p, batchSize int, fitIntercept bool) ([]float64, int, error) {
 	if len(X) < batchSize*n*p {
 		return nil, 0, ErrInvalidDimensions
 	}
 	if len(y) < batchSize*n {
 		return nil, 0, ErrInvalidDimensions
 	}
-	if n <= 0 || p <= 0 || batchSize <= 0 || n < p {
+	if n <= 0 || p <= 0 || batchSize <= 0 {
+		return nil, 0, ErrInvalidDimensions
+	}
+	if fitIntercept && n <= p {
+		return nil, 0, ErrInvalidDimensions
+	}
+	if !fitIntercept && n < p {
 		return nil, 0, ErrInvalidDimensions
 	}
 
-	beta := make([]float64, batchSize*p)
+	betaSize := batchSize * p
+	if fitIntercept {
+		betaSize = batchSize * (p + 1)
+	}
+	beta := make([]float64, betaSize)
+
+	fitInterceptC := C.int(0)
+	if fitIntercept {
+		fitInterceptC = C.int(1)
+	}
 
 	count := C.fc_optim_least_squares_batch(
 		(*C.double)(unsafe.Pointer(&X[0])),
@@ -148,6 +204,7 @@ func LeastSquaresBatch(X, y []float64, n, p, batchSize int) ([]float64, int, err
 		C.size_t(n),
 		C.size_t(p),
 		C.size_t(batchSize),
+		fitInterceptC,
 		(*C.double)(unsafe.Pointer(&beta[0])),
 	)
 
@@ -169,24 +226,36 @@ type LeastSquaresResult struct {
 //   - y: Response vector (n x 1)
 //   - n: Number of observations
 //   - p: Number of predictors
+//   - fitIntercept: If true, fit an intercept term; if false, force regression through origin
 //   - computeResiduals: Whether to compute residuals
 //
 // Returns:
 //   - result: LeastSquaresResult containing coefficients and statistics
 //   - error: nil on success, error otherwise
-func LeastSquaresExt(X, y []float64, n, p int, computeResiduals bool) (*LeastSquaresResult, error) {
+func LeastSquaresExt(X, y []float64, n, p int, fitIntercept bool, computeResiduals bool) (*LeastSquaresResult, error) {
 	if len(X) < n*p {
 		return nil, ErrInvalidDimensions
 	}
 	if len(y) < n {
 		return nil, ErrInvalidDimensions
 	}
-	if n <= 0 || p <= 0 || n < p {
+	if n <= 0 || p <= 0 {
+		return nil, ErrInvalidDimensions
+	}
+	if fitIntercept && n <= p {
+		return nil, ErrInvalidDimensions
+	}
+	if !fitIntercept && n < p {
 		return nil, ErrInvalidDimensions
 	}
 
+	betaSize := p
+	if fitIntercept {
+		betaSize = p + 1
+	}
+
 	result := &LeastSquaresResult{
-		Beta: make([]float64, p),
+		Beta: make([]float64, betaSize),
 	}
 
 	var residualsPtr *C.double
@@ -198,11 +267,17 @@ func LeastSquaresExt(X, y []float64, n, p int, computeResiduals bool) (*LeastSqu
 	var rSquared C.double
 	var stdError C.double
 
+	fitInterceptC := C.int(0)
+	if fitIntercept {
+		fitInterceptC = C.int(1)
+	}
+
 	ret := C.fc_optim_least_squares_ext(
 		(*C.double)(unsafe.Pointer(&X[0])),
 		(*C.double)(unsafe.Pointer(&y[0])),
 		C.size_t(n),
 		C.size_t(p),
+		fitInterceptC,
 		(*C.double)(unsafe.Pointer(&result.Beta[0])),
 		residualsPtr,
 		&rSquared,

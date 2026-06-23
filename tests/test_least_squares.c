@@ -14,7 +14,7 @@ TEST(least_squares_basic) {
     double y[] = {2.0, 4.0, 5.0, 4.0, 5.0};
     double beta[2];
 
-    int ret = fc_optim_least_squares(X, y, 5, 2, beta);
+    int ret = fc_optim_least_squares(X, y, 5, 2, 0, beta);
 
     ASSERT_EQ(ret, 0);
     ASSERT_TRUE(fabs(beta[0] - 2.2) < 0.1);
@@ -26,7 +26,7 @@ TEST(least_squares_perfect_fit) {
     double y[] = {3.0, 5.0, 7.0};
     double beta[2];
 
-    int ret = fc_optim_least_squares(X, y, 3, 2, beta);
+    int ret = fc_optim_least_squares(X, y, 3, 2, 0, beta);
 
     ASSERT_EQ(ret, 0);
     ASSERT_TRUE(fabs(beta[0] - 1.0) < 1e-10);
@@ -38,9 +38,9 @@ TEST(least_squares_null_inputs) {
     double y[] = {1.0, 2.0};
     double beta[2];
 
-    ASSERT_EQ(fc_optim_least_squares(NULL, y, 2, 2, beta), -1);
-    ASSERT_EQ(fc_optim_least_squares(X, NULL, 2, 2, beta), -1);
-    ASSERT_EQ(fc_optim_least_squares(X, y, 2, 2, NULL), -1);
+    ASSERT_EQ(fc_optim_least_squares(NULL, y, 2, 2, 0, beta), -1);
+    ASSERT_EQ(fc_optim_least_squares(X, NULL, 2, 2, 0, beta), -1);
+    ASSERT_EQ(fc_optim_least_squares(X, y, 2, 2, 0, NULL), -1);
 }
 
 TEST(least_squares_invalid_dimensions) {
@@ -48,9 +48,9 @@ TEST(least_squares_invalid_dimensions) {
     double y[] = {1.0, 2.0};
     double beta[2];
 
-    ASSERT_EQ(fc_optim_least_squares(X, y, 0, 2, beta), -2);
-    ASSERT_EQ(fc_optim_least_squares(X, y, 2, 0, beta), -2);
-    ASSERT_EQ(fc_optim_least_squares(X, y, 2, 3, beta), -2);
+    ASSERT_EQ(fc_optim_least_squares(X, y, 0, 2, 0, beta), -2);
+    ASSERT_EQ(fc_optim_least_squares(X, y, 2, 0, 0, beta), -2);
+    ASSERT_EQ(fc_optim_least_squares(X, y, 2, 3, 0, beta), -2);
 }
 
 TEST(least_squares_multicollinearity) {
@@ -58,7 +58,7 @@ TEST(least_squares_multicollinearity) {
     double y[] = {1.0, 2.0, 3.0};
     double beta[3];
 
-    int ret = fc_optim_least_squares(X, y, 3, 3, beta);
+    int ret = fc_optim_least_squares(X, y, 3, 3, 0, beta);
 
     ASSERT_EQ(ret, -3);
 }
@@ -68,7 +68,7 @@ TEST(least_squares_batch_basic) {
     double y[] = {3.0, 5.0, 7.0, 4.0, 7.0, 10.0};
     double beta[4];
 
-    size_t count = fc_optim_least_squares_batch(X, y, 3, 2, 2, beta);
+    size_t count = fc_optim_least_squares_batch(X, y, 3, 2, 2, 0, beta);
 
     ASSERT_EQ(count, 2);
     ASSERT_TRUE(fabs(beta[0] - 1.0) < 1e-10);
@@ -82,9 +82,9 @@ TEST(least_squares_batch_null_inputs) {
     double y[] = {1.0, 2.0};
     double beta[2];
 
-    ASSERT_EQ(fc_optim_least_squares_batch(NULL, y, 2, 2, 1, beta), 0);
-    ASSERT_EQ(fc_optim_least_squares_batch(X, NULL, 2, 2, 1, beta), 0);
-    ASSERT_EQ(fc_optim_least_squares_batch(X, y, 2, 2, 1, NULL), 0);
+    ASSERT_EQ(fc_optim_least_squares_batch(NULL, y, 2, 2, 1, 0, beta), 0);
+    ASSERT_EQ(fc_optim_least_squares_batch(X, NULL, 2, 2, 1, 0, beta), 0);
+    ASSERT_EQ(fc_optim_least_squares_batch(X, y, 2, 2, 1, 0, NULL), 0);
 }
 
 TEST(least_squares_batch_invalid_dimensions) {
@@ -92,9 +92,9 @@ TEST(least_squares_batch_invalid_dimensions) {
     double y[] = {1.0, 2.0};
     double beta[2];
 
-    ASSERT_EQ(fc_optim_least_squares_batch(X, y, 0, 2, 1, beta), 0);
-    ASSERT_EQ(fc_optim_least_squares_batch(X, y, 2, 0, 1, beta), 0);
-    ASSERT_EQ(fc_optim_least_squares_batch(X, y, 2, 2, 0, beta), 0);
+    ASSERT_EQ(fc_optim_least_squares_batch(X, y, 0, 2, 1, 0, beta), 0);
+    ASSERT_EQ(fc_optim_least_squares_batch(X, y, 2, 0, 1, 0, beta), 0);
+    ASSERT_EQ(fc_optim_least_squares_batch(X, y, 2, 2, 0, 0, beta), 0);
 }
 
 TEST(least_squares_ext_basic) {
@@ -105,7 +105,7 @@ TEST(least_squares_ext_basic) {
     double r_squared;
     double std_error;
 
-    int ret = fc_optim_least_squares_ext(X, y, 5, 2, beta, residuals, &r_squared, &std_error);
+    int ret = fc_optim_least_squares_ext(X, y, 5, 2, 0, beta, residuals, &r_squared, &std_error);
 
     ASSERT_EQ(ret, 0);
     ASSERT_TRUE(fabs(beta[0] - 2.2) < 0.1);
@@ -128,7 +128,7 @@ TEST(least_squares_ext_perfect_fit) {
     double r_squared;
     double std_error;
 
-    int ret = fc_optim_least_squares_ext(X, y, 3, 2, beta, residuals, &r_squared, &std_error);
+    int ret = fc_optim_least_squares_ext(X, y, 3, 2, 0, beta, residuals, &r_squared, &std_error);
 
     ASSERT_EQ(ret, 0);
     ASSERT_TRUE(fabs(r_squared - 1.0) < 1e-10);
@@ -144,7 +144,7 @@ TEST(least_squares_ext_null_outputs) {
     double y[] = {3.0, 5.0, 7.0};
     double beta[2];
 
-    int ret = fc_optim_least_squares_ext(X, y, 3, 2, beta, NULL, NULL, NULL);
+    int ret = fc_optim_least_squares_ext(X, y, 3, 2, 0, beta, NULL, NULL, NULL);
 
     ASSERT_EQ(ret, 0);
     ASSERT_TRUE(fabs(beta[0] - 1.0) < 1e-10);
@@ -167,7 +167,7 @@ TEST(least_squares_larger_dataset) {
         y[i] = 2.0 + 3.0 * (i + 1) + 0.5 * (i + 1) * (i + 1) + ((i % 2) ? 0.1 : -0.1);
     }
 
-    int ret = fc_optim_least_squares(X, y, n, p, beta);
+    int ret = fc_optim_least_squares(X, y, n, p, 0, beta);
 
     ASSERT_EQ(ret, 0);
     ASSERT_TRUE(fabs(beta[0] - 2.0) < 0.5);

@@ -12,7 +12,7 @@ func TestLeastSquaresBasic(t *testing.T) {
 	}
 	y := []float64{2.0, 4.0, 5.0, 4.0, 5.0}
 
-	beta, err := LeastSquares(X, y, 5, 2)
+	beta, err := LeastSquares(X, y, 5, 2, false)
 	if err != nil {
 		t.Fatalf("LeastSquares failed: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestLeastSquaresPerfectFit(t *testing.T) {
 	}
 	y := []float64{3.0, 5.0, 7.0}
 
-	beta, err := LeastSquares(X, y, 3, 2)
+	beta, err := LeastSquares(X, y, 3, 2, false)
 	if err != nil {
 		t.Fatalf("LeastSquares failed: %v", err)
 	}
@@ -53,17 +53,17 @@ func TestLeastSquaresInvalidDimensions(t *testing.T) {
 	X := []float64{1.0, 2.0, 3.0, 4.0}
 	y := []float64{1.0, 2.0}
 
-	_, err := LeastSquares(X, y, 0, 2)
+	_, err := LeastSquares(X, y, 0, 2, false)
 	if err != ErrInvalidDimensions {
 		t.Errorf("Expected ErrInvalidDimensions for n=0, got %v", err)
 	}
 
-	_, err = LeastSquares(X, y, 2, 0)
+	_, err = LeastSquares(X, y, 2, 0, false)
 	if err != ErrInvalidDimensions {
 		t.Errorf("Expected ErrInvalidDimensions for p=0, got %v", err)
 	}
 
-	_, err = LeastSquares(X, y, 2, 3)
+	_, err = LeastSquares(X, y, 2, 3, false)
 	if err != ErrInvalidDimensions {
 		t.Errorf("Expected ErrInvalidDimensions for n<p, got %v", err)
 	}
@@ -77,7 +77,7 @@ func TestLeastSquaresRankDeficient(t *testing.T) {
 	}
 	y := []float64{1.0, 2.0, 3.0}
 
-	_, err := LeastSquares(X, y, 3, 3)
+	_, err := LeastSquares(X, y, 3, 3, false)
 	if err != ErrRankDeficient {
 		t.Errorf("Expected ErrRankDeficient for collinear matrix, got %v", err)
 	}
@@ -96,7 +96,7 @@ func TestLeastSquaresBatch(t *testing.T) {
 		4.0, 7.0, 10.0,
 	}
 
-	beta, count, err := LeastSquaresBatch(X, y, 3, 2, 2)
+	beta, count, err := LeastSquaresBatch(X, y, 3, 2, 2, false)
 	if err != nil {
 		t.Fatalf("LeastSquaresBatch failed: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestLeastSquaresExt(t *testing.T) {
 	}
 	y := []float64{2.0, 4.0, 5.0, 4.0, 5.0}
 
-	result, err := LeastSquaresExt(X, y, 5, 2, true)
+	result, err := LeastSquaresExt(X, y, 5, 2, false, true)
 	if err != nil {
 		t.Fatalf("LeastSquaresExt failed: %v", err)
 	}
@@ -158,7 +158,7 @@ func TestLeastSquaresExtPerfectFit(t *testing.T) {
 	}
 	y := []float64{3.0, 5.0, 7.0}
 
-	result, err := LeastSquaresExt(X, y, 3, 2, true)
+	result, err := LeastSquaresExt(X, y, 3, 2, false, true)
 	if err != nil {
 		t.Fatalf("LeastSquaresExt failed: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestLeastSquaresExtNoResiduals(t *testing.T) {
 	}
 	y := []float64{3.0, 5.0, 7.0}
 
-	result, err := LeastSquaresExt(X, y, 3, 2, false)
+	result, err := LeastSquaresExt(X, y, 3, 2, false, false)
 	if err != nil {
 		t.Fatalf("LeastSquaresExt failed: %v", err)
 	}
@@ -218,7 +218,7 @@ func BenchmarkLeastSquaresSmall(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Xcopy := make([]float64, len(X))
 		copy(Xcopy, X)
-		_, _ = LeastSquares(Xcopy, y, n, p)
+		_, _ = LeastSquares(Xcopy, y, n, p, false)
 	}
 }
 
@@ -238,7 +238,7 @@ func BenchmarkLeastSquaresMedium(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Xcopy := make([]float64, len(X))
 		copy(Xcopy, X)
-		_, _ = LeastSquares(Xcopy, y, n, p)
+		_, _ = LeastSquares(Xcopy, y, n, p, false)
 	}
 }
 
@@ -260,6 +260,6 @@ func BenchmarkLeastSquaresBatch(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Xcopy := make([]float64, len(X))
 		copy(Xcopy, X)
-		_, _, _ = LeastSquaresBatch(Xcopy, y, n, p, batchSize)
+		_, _, _ = LeastSquaresBatch(Xcopy, y, n, p, batchSize, false)
 	}
 }
