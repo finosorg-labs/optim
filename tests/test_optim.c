@@ -10,9 +10,11 @@
 
 /* External test registration functions from sub-modules */
 extern void register_least_squares_tests(void);
+extern void register_greeks_tests(void);
 
 /* Entry point for optim tests */
 void register_optim_tests(void) {
     /* Register all sub-module tests */
     register_least_squares_tests();
+    register_greeks_tests();
 }

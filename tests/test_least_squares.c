@@ -277,7 +277,7 @@ TEST(least_squares_ext_fit_intercept_true) {
     }
 }
 
-void register_optim_tests(void) {
+void register_least_squares_tests(void) {
     RUN_TEST(least_squares_basic);
     RUN_TEST(least_squares_perfect_fit);
     RUN_TEST(least_squares_null_inputs);

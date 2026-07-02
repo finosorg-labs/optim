@@ -26,6 +26,7 @@ add_executable(optim_benchmarks
     bench_main.c
     bench_optim.c
     bench_least_squares.c
+    bench_greeks.c
 )
 
 # Link with benchmark framework and optim library
@@ -35,6 +36,7 @@ target_link_libraries(optim_benchmarks
         finkit_optim_static_base
         finkit::platform
         finkit::ds
+        finkit::math
         m
 )
 
@@ -47,6 +49,8 @@ target_include_directories(optim_benchmarks
     PRIVATE
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/modules/platform/include
+        ${CMAKE_SOURCE_DIR}/modules/math/include
+        ${CMAKE_SOURCE_DIR}/modules/ds/include
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
