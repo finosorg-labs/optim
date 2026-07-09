@@ -24,6 +24,9 @@ package optim
 
 #include "least_squares.h"
 #include "greeks.h"
+#include "var_parametric.h"
+#include "var_historical.h"
+#include "var_monte_carlo.h"
 
 // Platform sources (dependency)
 #include "simd_detect.c"
@@ -47,6 +50,9 @@ package optim
 // optim sources
 #include "optim-c/least_squares.c"
 #include "optim-c/greeks.c"
+#include "optim-c/var_parametric.c"
+#include "optim-c/var_historical.c"
+#include "optim-c/var_monte_carlo.c"
 */
 import "C"
 

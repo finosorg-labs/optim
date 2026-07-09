@@ -27,6 +27,9 @@ add_executable(optim_benchmarks
     bench_optim.c
     bench_least_squares.c
     bench_greeks.c
+    bench_var_parametric.c
+    bench_var_historical.c
+    bench_var_monte_carlo.c
 )
 
 # Link with benchmark framework and optim library
@@ -37,6 +40,7 @@ target_link_libraries(optim_benchmarks
         finkit::platform
         finkit::ds
         finkit::math
+        finkit::random
         m
 )
 
@@ -51,6 +55,7 @@ target_include_directories(optim_benchmarks
         ${CMAKE_SOURCE_DIR}/modules/platform/include
         ${CMAKE_SOURCE_DIR}/modules/math/include
         ${CMAKE_SOURCE_DIR}/modules/ds/include
+        ${CMAKE_SOURCE_DIR}/modules/random/include
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

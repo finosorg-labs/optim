@@ -9,6 +9,9 @@ add_executable(optim_tests
     test_optim.c
     test_least_squares.c
     test_greeks.c
+    test_var_parametric.c
+    test_var_historical.c
+    test_var_monte_carlo.c
 )
 
 # Link with optim library
@@ -17,6 +20,7 @@ target_link_libraries(optim_tests
         finkit_optim_static_base
      finkit::ds
         finkit::math
+        finkit::random
         finkit::platform
         m
 )
@@ -32,6 +36,7 @@ target_include_directories(optim_tests
         ${CMAKE_SOURCE_DIR}/modules/platform/include
         ${CMAKE_SOURCE_DIR}/modules/math/include
         ${CMAKE_SOURCE_DIR}/modules/ds/include
+        ${CMAKE_SOURCE_DIR}/modules/random/include
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

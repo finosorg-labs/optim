@@ -13,6 +13,9 @@
 /* External benchmark functions from sub-modules */
 extern void bench_least_squares_run(void);
 extern void bench_greeks_run(void);
+extern void bench_var_parametric_run(void);
+extern void bench_var_historical_run(void);
+extern void bench_var_monte_carlo_run(void);
 
 /* Entry point for optim benchmarks */
 void bench_optim_run(void) {
@@ -25,6 +28,9 @@ void bench_optim_run(void) {
     /* Run all sub-module benchmarks */
     bench_least_squares_run();
     bench_greeks_run();
+    bench_var_parametric_run();
+    bench_var_historical_run();
+    bench_var_monte_carlo_run();
 
     printf("\n");
     printf("============================================================\n");

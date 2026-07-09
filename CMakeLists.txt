@@ -115,10 +115,41 @@ if(NOT TARGET finkit::math)
     add_library(finkit::math ALIAS finkit_math_static)
 endif()
 
+# Use prebuilt random library
+if(NOT TARGET finkit::random)
+    # Detect platform for random
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+            set(RANDOM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/build/darwin_arm64")
+        else()
+            set(RANDOM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/build/darwin_x86_64")
+        endif()
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(RANDOM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/build/linux_amd64")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        set(RANDOM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/build/windows_amd64")
+    else()
+        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+    endif()
+
+    # Import prebuilt random library
+    add_library(finkit_random_static STATIC IMPORTED)
+    set_target_properties(finkit_random_static PROPERTIES
+        IMPORTED_LOCATION "${RANDOM_BUILD_DIR}/libfinkit_random_static.a"
+    )
+    target_include_directories(finkit_random_static INTERFACE
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/include"
+    )
+    add_library(finkit::random ALIAS finkit_random_static)
+endif()
+
 # optim module sources
 set(OPTIM_SOURCES
     optim-c/least_squares.c
     optim-c/greeks.c
+    optim-c/var_parametric.c
+    optim-c/var_historical.c
+    optim-c/var_monte_carlo.c
 )
 
 # Create object library
@@ -130,6 +161,7 @@ target_include_directories(finkit_optim
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/platform/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/math/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/random/include>
         $<INSTALL_INTERFACE:include>
 )
 
@@ -139,12 +171,15 @@ target_compile_definitions(finkit_optim PRIVATE FC_STATIC_BUILD)
 if(FC_SIMD_LEVEL STREQUAL "AVX512")
     set_source_files_properties(optim-c/least_squares.c PROPERTIES COMPILE_FLAGS "${FC_AVX512_FLAGS}")
     set_source_files_properties(optim-c/greeks.c PROPERTIES COMPILE_FLAGS "${FC_AVX512_FLAGS}")
+    set_source_files_properties(optim-c/var_parametric.c PROPERTIES COMPILE_FLAGS "${FC_AVX512_FLAGS}")
 elseif(FC_SIMD_LEVEL STREQUAL "AVX2")
     set_source_files_properties(optim-c/least_squares.c PROPERTIES COMPILE_FLAGS "${FC_AVX2_FLAGS}")
     set_source_files_properties(optim-c/greeks.c PROPERTIES COMPILE_FLAGS "${FC_AVX2_FLAGS}")
+    set_source_files_properties(optim-c/var_parametric.c PROPERTIES COMPILE_FLAGS "${FC_AVX2_FLAGS}")
 elseif(FC_SIMD_LEVEL STREQUAL "SSE42")
     set_source_files_properties(optim-c/least_squares.c PROPERTIES COMPILE_FLAGS "${FC_SSE42_FLAGS}")
     set_source_files_properties(optim-c/greeks.c PROPERTIES COMPILE_FLAGS "${FC_SSE42_FLAGS}")
+    set_source_files_properties(optim-c/var_parametric.c PROPERTIES COMPILE_FLAGS "${FC_SSE42_FLAGS}")
 endif()
 
 # Create base static library (without platform)
@@ -173,6 +208,7 @@ set(MERGED_LIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}/libfink
 set(PLATFORM_LIB_PATH "${PLATFORM_BUILD_DIR}/libfinkit_platform_static.a")
 set(DS_LIB_PATH "${DS_BUILD_DIR}/libfinkit_ds_static.a")
 set(MATH_LIB_PATH "${MATH_BUILD_DIR}/libfinkit_math_static.a")
+set(RANDOM_LIB_PATH "${RANDOM_BUILD_DIR}/libfinkit_random_static.a")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     # Windows: use lib.exe to merge libraries
@@ -183,8 +219,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
             $<TARGET_FILE:finkit_optim_static_base>
             ${DS_LIB_PATH}
             ${MATH_LIB_PATH}
+            ${RANDOM_LIB_PATH}
          ${PLATFORM_LIB_PATH}
-        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${PLATFORM_LIB_PATH}
+        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${PLATFORM_LIB_PATH}
         COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
         VERBATIM
     )
@@ -197,9 +234,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
             $<TARGET_FILE:finkit_optim_static_base>
             ${DS_LIB_PATH}
             ${MATH_LIB_PATH}
+            ${RANDOM_LIB_PATH}
             ${PLATFORM_LIB_PATH}
             2>&1 | grep -v "warning duplicate member name" || true
-        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${PLATFORM_LIB_PATH}
+        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${PLATFORM_LIB_PATH}
         COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
         VERBATIM
     )
@@ -211,6 +249,7 @@ else()
 ADDLIB $<TARGET_FILE:finkit_optim_static_base>
 ADDLIB ${DS_LIB_PATH}
 ADDLIB ${MATH_LIB_PATH}
+ADDLIB ${RANDOM_LIB_PATH}
 ADDLIB ${PLATFORM_LIB_PATH}
 SAVE
 END
@@ -220,7 +259,7 @@ END
       OUTPUT ${MERGED_LIB_PATH}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}
         COMMAND ${CMAKE_AR} -M < ${MRI_SCRIPT}
-      DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${PLATFORM_LIB_PATH} ${MRI_SCRIPT}
+      DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${PLATFORM_LIB_PATH} ${MRI_SCRIPT}
         COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
       VERBATIM
     )
