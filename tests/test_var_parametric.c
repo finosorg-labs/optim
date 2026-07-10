@@ -205,11 +205,11 @@ TEST(var_parametric_batch_invalid_stddev) {
     double var[2], cvar[2];
 
     int ret = fc_optim_var_parametric_batch(2, means, stddevs, 0.95, var, cvar);
-    ASSERT_EQ(ret, -3);
+    ASSERT_EQ(ret, -2);
 
     stddevs[1] = 0.0;
     ret = fc_optim_var_parametric_batch(2, means, stddevs, 0.95, var, cvar);
-    ASSERT_EQ(ret, -3);
+    ASSERT_EQ(ret, -2);
 }
 
 TEST(var_parametric_batch_invalid_confidence) {

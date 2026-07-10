@@ -120,6 +120,37 @@ int fc_optim_var_historical_batch(
     double* cvar
 );
 
+/**
+ * @brief Calculate historical VaR/CVaR for multiple single-asset return series in batch
+ *
+ * Batch processing for multiple single assets, each with its own historical return series.
+ * Efficient for risk measurement across many individual assets.
+ *
+ * @param returns_matrix Matrix of return series (num_assets × n, row-major)
+ *                       Each row is a separate asset's historical returns
+ * @param num_assets Number of assets to process
+ * @param n Number of time periods (same for all assets)
+ * @param confidence Confidence level (must be in (0, 1))
+ * @param var Output: VaR values (num_assets elements, pre-allocated)
+ * @param cvar Output: CVaR values (num_assets elements, pre-allocated)
+ * @return 0 on success
+ *         -1 if any required pointer is NULL
+ *         -2 if num_assets == 0 or n == 0
+ *         -3 if confidence is not in (0, 1)
+ *
+ * Time complexity: O(num_assets × n log n)
+ * Space complexity: O(n) per asset for temporary storage
+ * Thread safety: Thread-safe if different output buffers are used
+ */
+int fc_optim_var_historical_batch_from_returns(
+    const double* returns_matrix,
+    size_t num_assets,
+    size_t n,
+    double confidence,
+    double* var,
+    double* cvar
+);
+
 #ifdef __cplusplus
 }
 #endif

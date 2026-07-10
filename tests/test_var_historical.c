@@ -205,10 +205,8 @@ TEST(var_historical_batch_large) {
     }
 
     for (size_t p = 0; p < num_portfolios; p++) {
-        double sum = 0.0;
         for (size_t i = 0; i < m; i++) {
             weights_matrix[p * m + i] = 1.0 / m;
-            sum += weights_matrix[p * m + i];
         }
     }
 
@@ -259,6 +257,84 @@ TEST(var_historical_batch_zero_size) {
     ASSERT_EQ(ret, -2);
 }
 
+TEST(var_historical_batch_from_returns_basic) {
+    // 3 assets, each with 10 periods
+    double returns_matrix[] = {
+        -0.05, -0.03, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06,  // Asset 1
+        -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06,  // Asset 2
+        -0.07, -0.05, -0.03, -0.01, 0.0, 0.01, 0.03, 0.05, 0.07, 0.09  // Asset 3
+    };
+    size_t num_assets = 3;
+    size_t n = 10;
+    double confidence = 0.90;
+    double var[3], cvar[3];
+
+    int ret = fc_optim_var_historical_batch_from_returns(returns_matrix, num_assets, n, confidence, var, cvar);
+
+    ASSERT_EQ(ret, 0);
+    // All assets should have negative VaR and CVaR < VaR
+    for (size_t i = 0; i < num_assets; i++) {
+        ASSERT_TRUE(var[i] < 0.0);
+        ASSERT_TRUE(cvar[i] < var[i]);
+    }
+}
+
+TEST(var_historical_batch_from_returns_consistency) {
+    // Verify batch results match individual calls
+    double returns_matrix[] = {
+        -0.05, -0.03, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06,
+        -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06
+    };
+    size_t num_assets = 2;
+    size_t n = 10;
+    double confidence = 0.95;
+    double var_batch[2], cvar_batch[2];
+    double var_single[2], cvar_single[2];
+
+    // Batch call
+    int ret_batch = fc_optim_var_historical_batch_from_returns(
+        returns_matrix, num_assets, n, confidence, var_batch, cvar_batch
+    );
+    ASSERT_EQ(ret_batch, 0);
+
+    // Individual calls
+    for (size_t i = 0; i < num_assets; i++) {
+        int ret = fc_optim_var_historical(&returns_matrix[i * n], n, confidence, &var_single[i], &cvar_single[i]);
+        ASSERT_EQ(ret, 0);
+    }
+
+    // Compare results
+    for (size_t i = 0; i < num_assets; i++) {
+        ASSERT_TRUE(fabs(var_batch[i] - var_single[i]) < 1e-10);
+        ASSERT_TRUE(fabs(cvar_batch[i] - cvar_single[i]) < 1e-10);
+    }
+}
+
+TEST(var_historical_batch_from_returns_null_inputs) {
+    double returns[10];
+    double var[2], cvar[2];
+
+    int ret = fc_optim_var_historical_batch_from_returns(NULL, 2, 10, 0.95, var, cvar);
+    ASSERT_EQ(ret, -1);
+
+    ret = fc_optim_var_historical_batch_from_returns(returns, 2, 10, 0.95, NULL, cvar);
+    ASSERT_EQ(ret, -1);
+
+    ret = fc_optim_var_historical_batch_from_returns(returns, 2, 10, 0.95, var, NULL);
+    ASSERT_EQ(ret, -1);
+}
+
+TEST(var_historical_batch_from_returns_zero_size) {
+    double returns[10] = {0};
+    double var[2], cvar[2];
+
+    int ret = fc_optim_var_historical_batch_from_returns(returns, 0, 10, 0.95, var, cvar);
+    ASSERT_EQ(ret, -2);
+
+    ret = fc_optim_var_historical_batch_from_returns(returns, 2, 0, 0.95, var, cvar);
+    ASSERT_EQ(ret, -2);
+}
+
 void register_var_historical_tests(void) {
     RUN_TEST(var_historical_basic);
     RUN_TEST(var_historical_95_confidence);
@@ -275,4 +351,8 @@ void register_var_historical_tests(void) {
     RUN_TEST(var_historical_batch_large);
     RUN_TEST(var_historical_batch_null_inputs);
     RUN_TEST(var_historical_batch_zero_size);
+    RUN_TEST(var_historical_batch_from_returns_basic);
+    RUN_TEST(var_historical_batch_from_returns_consistency);
+    RUN_TEST(var_historical_batch_from_returns_null_inputs);
+    RUN_TEST(var_historical_batch_from_returns_zero_size);
 }

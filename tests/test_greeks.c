@@ -16,7 +16,7 @@ TEST(greeks_call_basic) {
     double r[] = {0.05};
     double sigma[] = {0.2};
     int is_call[] = {1};
-    double delta[1], gamma[1], vega[1], theta[1], rho[1];
+    double delta[1] = {0}, gamma[1] = {0}, vega[1] = {0}, theta[1] = {0}, rho[1] = {0};
 
     int ret = fc_optim_greeks_batch(1, S, K, T, r, sigma, is_call, delta, gamma, vega, theta, rho);
 
@@ -35,7 +35,7 @@ TEST(greeks_put_basic) {
     double r[] = {0.05};
     double sigma[] = {0.2};
     int is_call[] = {0};
-    double delta[1], gamma[1], vega[1], theta[1], rho[1];
+    double delta[1] = {0}, gamma[1] = {0}, vega[1] = {0}, theta[1] = {0}, rho[1] = {0};
 
     int ret = fc_optim_greeks_batch(1, S, K, T, r, sigma, is_call, delta, gamma, vega, theta, rho);
 
@@ -54,7 +54,7 @@ TEST(greeks_itm_call) {
     double r[] = {0.05};
     double sigma[] = {0.25};
     int is_call[] = {1};
-    double delta[1], gamma[1], vega[1], theta[1], rho[1];
+    double delta[1] = {0}, gamma[1] = {0}, vega[1] = {0}, theta[1] = {0}, rho[1] = {0};
 
     int ret = fc_optim_greeks_batch(1, S, K, T, r, sigma, is_call, delta, gamma, vega, theta, rho);
 
@@ -73,7 +73,7 @@ TEST(greeks_otm_put) {
     double r[] = {0.05};
     double sigma[] = {0.25};
     int is_call[] = {0};
-    double delta[1], gamma[1], vega[1], theta[1], rho[1];
+    double delta[1] = {0}, gamma[1] = {0}, vega[1] = {0}, theta[1] = {0}, rho[1] = {0};
 
     int ret = fc_optim_greeks_batch(1, S, K, T, r, sigma, is_call, delta, gamma, vega, theta, rho);
 
@@ -91,7 +91,7 @@ TEST(greeks_batch_mixed) {
     double r[] = {0.05, 0.05, 0.05, 0.05};
     double sigma[] = {0.2, 0.25, 0.3, 0.15};
     int is_call[] = {1, 1, 0, 0};
-    double delta[4], gamma[4], vega[4], theta[4], rho[4];
+    double delta[4] = {0}, gamma[4] = {0}, vega[4] = {0}, theta[4] = {0}, rho[4] = {0};
 
     int ret = fc_optim_greeks_batch(4, S, K, T, r, sigma, is_call, delta, gamma, vega, theta, rho);
 
@@ -292,7 +292,7 @@ TEST(greeks_short_expiry) {
     double r[] = {0.05};
     double sigma[] = {0.2};
     int is_call[] = {1};
-    double delta[1], gamma[1], vega[1], theta[1], rho[1];
+    double delta[1] = {0}, gamma[1] = {0}, vega[1] = {0}, theta[1] = {0}, rho[1] = {0};
 
     int ret = fc_optim_greeks_batch(1, S, K, T, r, sigma, is_call, delta, gamma, vega, theta, rho);
 
@@ -309,7 +309,7 @@ TEST(greeks_high_volatility) {
     double r[] = {0.05};
     double sigma[] = {1.0};
     int is_call[] = {1};
-    double delta[1], gamma[1], vega[1], theta[1], rho[1];
+    double delta[1] = {0}, gamma[1] = {0}, vega[1] = {0}, theta[1] = {0}, rho[1] = {0};
 
     int ret = fc_optim_greeks_batch(1, S, K, T, r, sigma, is_call, delta, gamma, vega, theta, rho);
 

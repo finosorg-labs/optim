@@ -130,6 +130,82 @@ int fc_optim_var_monte_carlo_from_history(
     double* cvar
 );
 
+/**
+ * @brief Simple Monte Carlo VaR/CVaR calculation (convenience function)
+ *
+ * One-shot convenience function that internally manages state object.
+ * Suitable for single calculations where state management overhead is acceptable.
+ *
+ * @param returns Historical returns matrix (dim × n_periods, row-major)
+ * @param weights Portfolio weights (dim elements)
+ * @param dim Number of assets
+ * @param n_periods Number of historical periods (must be >= dim + 1)
+ * @param n_paths Number of Monte Carlo paths to simulate
+ * @param confidence Confidence level (must be in (0, 1))
+ * @param seed Random seed for reproducibility
+ * @param var Output: VaR
+ * @param cvar Output: CVaR
+ * @return 0 on success, error code otherwise
+ *
+ * Time complexity: O(dim² × n_periods + dim³ + n_paths × dim²)
+ * Space complexity: O(n_paths × dim + dim²) for state and covariance
+ * Thread safety: Thread-safe (creates independent state)
+ *
+ * @note For repeated calculations, use fc_optim_var_monte_carlo_state_create()
+ *       and fc_optim_var_monte_carlo_from_history() to avoid repeated allocation
+ */
+int fc_optim_var_monte_carlo_simple(
+    const double* returns,
+    const double* weights,
+    size_t dim,
+    size_t n_periods,
+    size_t n_paths,
+    double confidence,
+    uint64_t seed,
+    double* var,
+    double* cvar
+);
+
+/**
+ * @brief Calculate Monte Carlo VaR/CVaR for multiple portfolios in batch
+ *
+ * Batch processing for multiple portfolios sharing the same asset return history
+ * but with different weights. Uses Monte Carlo simulation for each portfolio.
+ * Efficient for risk measurement across many portfolios.
+ *
+ * @param state Monte Carlo state object (pre-created with appropriate n_paths)
+ * @param returns Asset return matrix (dim × n_periods, row-major)
+ * @param weights_matrix Portfolio weights matrix (num_portfolios × dim, row-major)
+ * @param num_portfolios Number of portfolios to process
+ * @param dim Number of assets
+ * @param n_periods Number of historical periods (must be >= dim + 1)
+ * @param confidence Confidence level (must be in (0, 1))
+ * @param var Output: VaR values (num_portfolios elements, pre-allocated)
+ * @param cvar Output: CVaR values (num_portfolios elements, pre-allocated)
+ * @return 0 on success
+ *         -1 if any required pointer is NULL
+ *         -2 if num_portfolios == 0, dim == 0, or n_periods == 0
+ *         -3 if confidence is not in (0, 1)
+ *         -7 if n_periods < dim + 1 (insufficient data)
+ *
+ * Time complexity: O(num_portfolios × (dim² × n_periods + dim³ + n_paths × dim))
+ * Space complexity: O(dim × n_periods + dim²) for covariance computation
+ * Thread safety: Thread-safe if state objects and output buffers are different
+ *
+ * @note All portfolios share the same covariance matrix computed from returns
+ */
+int fc_optim_var_monte_carlo_batch(
+    fc_var_mc_state_t* state,
+    const double* returns,
+    const double* weights_matrix,
+    size_t num_portfolios,
+    size_t dim,
+    size_t n_periods,
+    double confidence,
+    double* var,
+    double* cvar
+);
+
 #ifdef __cplusplus
 }
 #endif
