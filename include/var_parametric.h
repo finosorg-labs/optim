@@ -90,6 +90,84 @@ int fc_optim_var_parametric_batch(
     double* cvar
 );
 
+/**
+ * @brief Calculate parametric VaR/CVaR from historical returns data
+ *
+ * Convenience function that computes mean and standard deviation from historical
+ * returns, then applies the parametric method. Assumes returns are normally
+ * distributed.
+ *
+ * @param returns Historical returns data (n_periods elements)
+ * @param n_periods Number of historical periods (must be >= 2)
+ * @param confidence Confidence level (must be in (0, 1))
+ * @param var Output: VaR
+ * @param cvar Output: CVaR
+ * @return 0 on success
+ *         -1 if any required pointer is NULL
+ *         -2 if n_periods < 2
+ *         -3 if confidence not in (0, 1)
+ *         -4 if memory allocation failed
+ *
+ * Time complexity: O(n_periods)
+ * Space complexity: O(1)
+ * Thread safety: Thread-safe
+ *
+ * @note Uses sample standard deviation (divides by n-1)
+ * @note Internally calls fc_stats_mean_variance_f64() from stats module
+ */
+int fc_optim_var_parametric_from_returns(
+    const double* returns,
+    size_t n_periods,
+    double confidence,
+    double* var,
+    double* cvar
+);
+
+/**
+ * @brief Calculate parametric VaR/CVaR for portfolio from multi-asset returns
+ *
+ * Computes portfolio statistics from multi-asset historical returns, then
+ * applies parametric method. This is the most complete convenience function
+ * that handles the full workflow from raw data to VaR/CVaR.
+ *
+ * Workflow:
+ * 1. Compute mean return for each asset using stats module
+ * 2. Compute covariance matrix using stats module
+ * 3. Calculate portfolio mean: μ_p = w^T μ
+ * 4. Calculate portfolio variance: σ²_p = w^T Σ w (using GEMV from matrix module)
+ * 5. Apply parametric formulas
+ *
+ * @param returns Historical returns matrix (dim × n_periods, row-major)
+ * @param weights Portfolio weights (dim elements, should sum to 1.0)
+ * @param dim Number of assets (must be > 0)
+ * @param n_periods Number of historical periods (must be >= dim + 1)
+ * @param confidence Confidence level (must be in (0, 1))
+ * @param var Output: VaR
+ * @param cvar Output: CVaR
+ * @return 0 on success
+ *         -1 if any required pointer is NULL
+ *         -2 if dim == 0 or n_periods insufficient
+ *         -3 if confidence not in (0, 1)
+ *         -4 if memory allocation failed
+ *
+ * Time complexity: O(dim² × n_periods + dim²)
+ * Space complexity: O(dim²) for covariance matrix
+ * Thread safety: Thread-safe
+ *
+ * @note Requires sufficient historical data: n_periods >= dim + 1
+ * @note Uses sample covariance (divides by n-1)
+ * @note Portfolio variance must be positive (guaranteed if covariance is valid)
+ */
+int fc_optim_var_parametric_from_portfolio_returns(
+    const double* returns,
+    const double* weights,
+    size_t dim,
+    size_t n_periods,
+    double confidence,
+    double* var,
+    double* cvar
+);
+
 #ifdef __cplusplus
 }
 #endif

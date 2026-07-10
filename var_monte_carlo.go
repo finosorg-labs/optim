@@ -1,8 +1,6 @@
 package optim
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/modules/random/include
-#cgo LDFLAGS: -L${SRCDIR}/modules/random/build/linux_amd64 -lfinkit_random_static
 #include "var_monte_carlo.h"
 */
 import "C"

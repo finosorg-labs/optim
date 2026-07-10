@@ -143,6 +143,62 @@ if(NOT TARGET finkit::random)
     add_library(finkit::random ALIAS finkit_random_static)
 endif()
 
+# Use prebuilt stats library
+if(NOT TARGET finkit::stats)
+    # Detect platform for stats
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+            set(STATS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/build/darwin_arm64")
+        else()
+            set(STATS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/build/darwin_x86_64")
+        endif()
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(STATS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/build/linux_amd64")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        set(STATS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/build/windows_amd64")
+    else()
+        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+    endif()
+
+    # Import prebuilt stats library
+    add_library(finkit_stats_static STATIC IMPORTED)
+    set_target_properties(finkit_stats_static PROPERTIES
+        IMPORTED_LOCATION "${STATS_BUILD_DIR}/libfinkit_stats_static.a"
+    )
+    target_include_directories(finkit_stats_static INTERFACE
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/include"
+    )
+    add_library(finkit::stats ALIAS finkit_stats_static)
+endif()
+
+# Use prebuilt matrix library
+if(NOT TARGET finkit::matrix)
+    # Detect platform for matrix
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+            set(MATRIX_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/build/darwin_arm64")
+        else()
+            set(MATRIX_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/build/darwin_x86_64")
+        endif()
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(MATRIX_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/build/linux_amd64")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        set(MATRIX_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/build/windows_amd64")
+    else()
+        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+    endif()
+
+    # Import prebuilt matrix library
+    add_library(finkit_matrix_static STATIC IMPORTED)
+    set_target_properties(finkit_matrix_static PROPERTIES
+        IMPORTED_LOCATION "${MATRIX_BUILD_DIR}/libfinkit_matrix_static.a"
+    )
+    target_include_directories(finkit_matrix_static INTERFACE
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/include"
+    )
+    add_library(finkit::matrix ALIAS finkit_matrix_static)
+endif()
+
 # optim module sources
 set(OPTIM_SOURCES
     optim-c/least_squares.c
@@ -162,6 +218,8 @@ target_include_directories(finkit_optim
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/math/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/random/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/include>
         $<INSTALL_INTERFACE:include>
 )
 
@@ -209,6 +267,8 @@ set(PLATFORM_LIB_PATH "${PLATFORM_BUILD_DIR}/libfinkit_platform_static.a")
 set(DS_LIB_PATH "${DS_BUILD_DIR}/libfinkit_ds_static.a")
 set(MATH_LIB_PATH "${MATH_BUILD_DIR}/libfinkit_math_static.a")
 set(RANDOM_LIB_PATH "${RANDOM_BUILD_DIR}/libfinkit_random_static.a")
+set(STATS_LIB_PATH "${STATS_BUILD_DIR}/libfinkit_stats_static.a")
+set(MATRIX_LIB_PATH "${MATRIX_BUILD_DIR}/libfinkit_matrix_static.a")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     # Windows: use lib.exe to merge libraries
@@ -220,8 +280,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
             ${DS_LIB_PATH}
             ${MATH_LIB_PATH}
             ${RANDOM_LIB_PATH}
+            ${STATS_LIB_PATH}
+            ${MATRIX_LIB_PATH}
          ${PLATFORM_LIB_PATH}
-        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${PLATFORM_LIB_PATH}
+        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${STATS_LIB_PATH} ${MATRIX_LIB_PATH} ${PLATFORM_LIB_PATH}
         COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
         VERBATIM
     )
@@ -235,9 +297,11 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
             ${DS_LIB_PATH}
             ${MATH_LIB_PATH}
             ${RANDOM_LIB_PATH}
+            ${STATS_LIB_PATH}
+            ${MATRIX_LIB_PATH}
             ${PLATFORM_LIB_PATH}
             2>&1 | grep -v "warning duplicate member name" || true
-        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${PLATFORM_LIB_PATH}
+        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${STATS_LIB_PATH} ${MATRIX_LIB_PATH} ${PLATFORM_LIB_PATH}
         COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
         VERBATIM
     )
@@ -250,6 +314,8 @@ ADDLIB $<TARGET_FILE:finkit_optim_static_base>
 ADDLIB ${DS_LIB_PATH}
 ADDLIB ${MATH_LIB_PATH}
 ADDLIB ${RANDOM_LIB_PATH}
+ADDLIB ${STATS_LIB_PATH}
+ADDLIB ${MATRIX_LIB_PATH}
 ADDLIB ${PLATFORM_LIB_PATH}
 SAVE
 END
@@ -259,7 +325,7 @@ END
       OUTPUT ${MERGED_LIB_PATH}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}
         COMMAND ${CMAKE_AR} -M < ${MRI_SCRIPT}
-      DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${PLATFORM_LIB_PATH} ${MRI_SCRIPT}
+      DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${STATS_LIB_PATH} ${MATRIX_LIB_PATH} ${PLATFORM_LIB_PATH} ${MRI_SCRIPT}
         COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
       VERBATIM
     )

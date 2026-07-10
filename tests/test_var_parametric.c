@@ -224,6 +224,92 @@ TEST(var_parametric_batch_invalid_confidence) {
     ASSERT_EQ(ret, -3);
 }
 
+TEST(var_parametric_from_returns_basic) {
+    double returns[] = {0.01, -0.02, 0.03, -0.01, 0.02, -0.03, 0.01, 0.00, -0.01, 0.02};
+    size_t n_periods = 10;
+    double confidence = 0.95;
+    double var, cvar;
+
+    int ret = fc_optim_var_parametric_from_returns(returns, n_periods, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(cvar < var);
+}
+
+TEST(var_parametric_from_returns_consistency) {
+    double returns[] = {0.01, -0.02, 0.03, -0.01, 0.02};
+    size_t n_periods = 5;
+    double confidence = 0.95;
+
+    double var1, cvar1, var2, cvar2;
+
+    // Method 1: Direct from returns
+    int ret1 = fc_optim_var_parametric_from_returns(returns, n_periods, confidence, &var1, &cvar1);
+
+    // Method 2: Manual mean/stddev calculation
+    double sum = 0.0;
+    for (size_t i = 0; i < n_periods; i++) {
+        sum += returns[i];
+    }
+    double mean = sum / n_periods;
+
+    double var_sum = 0.0;
+    for (size_t i = 0; i < n_periods; i++) {
+        double dev = returns[i] - mean;
+        var_sum += dev * dev;
+    }
+    double stddev = sqrt(var_sum / (n_periods - 1));
+
+    int ret2 = fc_optim_var_parametric(mean, stddev, confidence, &var2, &cvar2);
+
+    ASSERT_EQ(ret1, 0);
+    ASSERT_EQ(ret2, 0);
+    ASSERT_TRUE(fabs(var1 - var2) < 1e-10);
+    ASSERT_TRUE(fabs(cvar1 - cvar2) < 1e-10);
+}
+
+TEST(var_parametric_from_portfolio_returns_basic) {
+    // 2 assets, 10 periods
+    double returns[] = {
+        0.01, -0.02, 0.03, -0.01, 0.02, -0.03, 0.01, 0.00, -0.01, 0.02,  // Asset 1
+        -0.01, 0.02, -0.02, 0.01, -0.01, 0.02, 0.00, 0.01, -0.02, 0.01   // Asset 2
+    };
+    double weights[] = {0.6, 0.4};
+    size_t dim = 2;
+    size_t n_periods = 10;
+    double confidence = 0.95;
+    double var, cvar;
+
+    int ret = fc_optim_var_parametric_from_portfolio_returns(
+        returns, weights, dim, n_periods, confidence, &var, &cvar
+    );
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(cvar < var);
+}
+
+TEST(var_parametric_from_returns_null_inputs) {
+    double returns[] = {0.01, 0.02};
+    double var, cvar;
+
+    int ret = fc_optim_var_parametric_from_returns(NULL, 10, 0.95, &var, &cvar);
+    ASSERT_EQ(ret, -1);
+
+    ret = fc_optim_var_parametric_from_returns(returns, 10, 0.95, NULL, &cvar);
+    ASSERT_EQ(ret, -1);
+
+    ret = fc_optim_var_parametric_from_returns(returns, 10, 0.95, &var, NULL);
+    ASSERT_EQ(ret, -1);
+}
+
+TEST(var_parametric_from_returns_insufficient_data) {
+    double returns[] = {0.01};
+    double var, cvar;
+
+    int ret = fc_optim_var_parametric_from_returns(returns, 1, 0.95, &var, &cvar);
+    ASSERT_EQ(ret, -2);
+}
+
 void register_var_parametric_tests(void) {
     RUN_TEST(var_parametric_basic);
     RUN_TEST(var_parametric_99_confidence);
@@ -239,4 +325,9 @@ void register_var_parametric_tests(void) {
     RUN_TEST(var_parametric_batch_zero_size);
     RUN_TEST(var_parametric_batch_invalid_stddev);
     RUN_TEST(var_parametric_batch_invalid_confidence);
+    RUN_TEST(var_parametric_from_returns_basic);
+    RUN_TEST(var_parametric_from_returns_consistency);
+    RUN_TEST(var_parametric_from_portfolio_returns_basic);
+    RUN_TEST(var_parametric_from_returns_null_inputs);
+    RUN_TEST(var_parametric_from_returns_insufficient_data);
 }
