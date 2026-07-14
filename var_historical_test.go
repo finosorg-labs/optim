@@ -1,6 +1,7 @@
 package optim
 
 import (
+	"math"
 	"testing"
 )
 
@@ -255,5 +256,250 @@ func BenchmarkVarHistoricalBatch_10Portfolios(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		VarHistoricalBatch(returns, weightsMatrix, 0.95)
+	}
+}
+
+func TestVarHistoricalBatchFromReturns_Basic(t *testing.T) {
+	// 3 assets, each with 30 returns
+	returnsMatrix := [][]float64{
+		{0.02, -0.01, 0.03, 0.01, -0.02, 0.015, -0.005, 0.025, 0.005, -0.015,
+			0.01, 0.02, -0.01, 0.03, -0.02, 0.015, -0.005, 0.025, 0.005, -0.015,
+			0.02, -0.01, 0.03, 0.01, -0.02, 0.015, -0.005, 0.025, 0.005, -0.015},
+		{-0.01, 0.03, 0.01, -0.02, 0.02, -0.015, 0.025, -0.005, 0.015, 0.005,
+			-0.01, 0.03, 0.01, -0.02, 0.02, -0.015, 0.025, -0.005, 0.015, 0.005,
+			-0.01, 0.03, 0.01, -0.02, 0.02, -0.015, 0.025, -0.005, 0.015, 0.005},
+		{0.015, -0.01, 0.02, 0.005, -0.015, 0.01, -0.005, 0.02, 0.0, -0.01,
+			0.015, -0.01, 0.02, 0.005, -0.015, 0.01, -0.005, 0.02, 0.0, -0.01,
+			0.015, -0.01, 0.02, 0.005, -0.015, 0.01, -0.005, 0.02, 0.0, -0.01},
+	}
+	confidence := 0.95
+
+	var_, cvar, err := VarHistoricalBatchFromReturns(returnsMatrix, confidence)
+	if err != nil {
+		t.Fatalf("VarHistoricalBatchFromReturns failed: %v", err)
+	}
+
+	if len(var_) != 3 {
+		t.Errorf("Expected 3 VaR values, got %d", len(var_))
+	}
+
+	if len(cvar) != 3 {
+		t.Errorf("Expected 3 CVaR values, got %d", len(cvar))
+	}
+
+	for i := 0; i < 3; i++ {
+		if cvar[i] > var_[i] {
+			t.Errorf("Asset %d: CVaR should be <= VaR: cvar=%f, var=%f", i, cvar[i], var_[i])
+		}
+
+		if math.IsNaN(var_[i]) || math.IsInf(var_[i], 0) {
+			t.Errorf("Asset %d: VaR is not finite: %f", i, var_[i])
+		}
+
+		if math.IsNaN(cvar[i]) || math.IsInf(cvar[i], 0) {
+			t.Errorf("Asset %d: CVaR is not finite: %f", i, cvar[i])
+		}
+	}
+}
+
+func TestVarHistoricalBatchFromReturns_SingleAsset(t *testing.T) {
+	returnsMatrix := [][]float64{
+		{0.02, -0.01, 0.03, 0.01, -0.02, 0.015, -0.005, 0.025, 0.005, -0.015},
+	}
+	confidence := 0.95
+
+	var_, cvar, err := VarHistoricalBatchFromReturns(returnsMatrix, confidence)
+	if err != nil {
+		t.Fatalf("VarHistoricalBatchFromReturns failed: %v", err)
+	}
+
+	if len(var_) != 1 {
+		t.Errorf("Expected 1 VaR value, got %d", len(var_))
+	}
+
+	if cvar[0] > var_[0] {
+		t.Errorf("CVaR should be <= VaR: cvar=%f, var=%f", cvar[0], var_[0])
+	}
+}
+
+func TestVarHistoricalBatchFromReturns_EmptyInput(t *testing.T) {
+	_, _, err := VarHistoricalBatchFromReturns([][]float64{}, 0.95)
+	if err == nil {
+		t.Error("Expected error for empty input")
+	}
+}
+
+func TestVarHistoricalBatchFromReturns_UnequalPeriods(t *testing.T) {
+	returnsMatrix := [][]float64{
+		{0.01, 0.02, 0.03},
+		{-0.01, 0.02}, // Different length
+	}
+
+	_, _, err := VarHistoricalBatchFromReturns(returnsMatrix, 0.95)
+	if err == nil {
+		t.Error("Expected error for unequal periods")
+	}
+}
+
+func TestVarHistoricalBatchFromReturns_InvalidConfidence(t *testing.T) {
+	returnsMatrix := [][]float64{
+		{0.01, 0.02, 0.03},
+	}
+
+	_, _, err := VarHistoricalBatchFromReturns(returnsMatrix, 0.0)
+	if err == nil {
+		t.Error("Expected error for confidence = 0")
+	}
+
+	_, _, err = VarHistoricalBatchFromReturns(returnsMatrix, 1.0)
+	if err == nil {
+		t.Error("Expected error for confidence = 1")
+	}
+
+	_, _, err = VarHistoricalBatchFromReturns(returnsMatrix, 1.5)
+	if err == nil {
+		t.Error("Expected error for confidence > 1")
+	}
+}
+
+func TestVarHistoricalBatchFromReturns_ConsistencyWithSingle(t *testing.T) {
+	returnsMatrix := [][]float64{
+		{0.02, -0.01, 0.03, 0.01, -0.02, 0.015, -0.005, 0.025, 0.005, -0.015,
+			0.01, 0.02, -0.01, 0.03, -0.02},
+		{-0.01, 0.03, 0.01, -0.02, 0.02, -0.015, 0.025, -0.005, 0.015, 0.005,
+			-0.01, 0.03, 0.01, -0.02, 0.02},
+	}
+	confidence := 0.95
+
+	varBatch, cvarBatch, err := VarHistoricalBatchFromReturns(returnsMatrix, confidence)
+	if err != nil {
+		t.Fatalf("VarHistoricalBatchFromReturns failed: %v", err)
+	}
+
+	// Compare with individual calls
+	for i := 0; i < len(returnsMatrix); i++ {
+		varSingle, cvarSingle, err := VarHistorical(returnsMatrix[i], confidence)
+		if err != nil {
+			t.Fatalf("VarHistorical failed for asset %d: %v", i, err)
+		}
+
+		if math.Abs(varBatch[i]-varSingle) > 1e-10 {
+			t.Errorf("Asset %d VaR mismatch: batch=%f, single=%f", i, varBatch[i], varSingle)
+		}
+
+		if math.Abs(cvarBatch[i]-cvarSingle) > 1e-10 {
+			t.Errorf("Asset %d CVaR mismatch: batch=%f, single=%f", i, cvarBatch[i], cvarSingle)
+		}
+	}
+}
+
+func TestVarHistoricalBatchFromReturns_99Confidence(t *testing.T) {
+	// Test with higher confidence level
+	returnsMatrix := [][]float64{
+		{0.02, -0.01, 0.03, 0.01, -0.02, 0.015, -0.005, 0.025, 0.005, -0.015,
+			0.01, 0.02, -0.01, 0.03, -0.02, 0.015, -0.005, 0.025, 0.005, -0.015},
+		{-0.01, 0.03, 0.01, -0.02, 0.02, -0.015, 0.025, -0.005, 0.015, 0.005,
+			-0.01, 0.03, 0.01, -0.02, 0.02, -0.015, 0.025, -0.005, 0.015, 0.005},
+	}
+	confidence := 0.99
+
+	var_, cvar, err := VarHistoricalBatchFromReturns(returnsMatrix, confidence)
+	if err != nil {
+		t.Fatalf("VarHistoricalBatchFromReturns failed: %v", err)
+	}
+
+	for i := 0; i < len(returnsMatrix); i++ {
+		if cvar[i] > var_[i] {
+			t.Errorf("Asset %d: CVaR should be <= VaR at 99%% confidence", i)
+		}
+	}
+}
+
+func TestVarHistoricalBatchFromReturns_ManyAssets(t *testing.T) {
+	// Test with many assets
+	numAssets := 20
+	nPeriods := 50
+	returnsMatrix := make([][]float64, numAssets)
+
+	for i := 0; i < numAssets; i++ {
+		returnsMatrix[i] = make([]float64, nPeriods)
+		for j := 0; j < nPeriods; j++ {
+			returnsMatrix[i][j] = 0.01 * float64((i+j)%10-5)
+		}
+	}
+
+	confidence := 0.95
+
+	var_, cvar, err := VarHistoricalBatchFromReturns(returnsMatrix, confidence)
+	if err != nil {
+		t.Fatalf("VarHistoricalBatchFromReturns failed: %v", err)
+	}
+
+	if len(var_) != numAssets {
+		t.Errorf("Expected %d VaR values, got %d", numAssets, len(var_))
+	}
+
+	if len(cvar) != numAssets {
+		t.Errorf("Expected %d CVaR values, got %d", numAssets, len(cvar))
+	}
+
+	for i := 0; i < numAssets; i++ {
+		if cvar[i] > var_[i] {
+			t.Errorf("Asset %d: CVaR should be <= VaR", i)
+		}
+	}
+}
+
+func BenchmarkVarHistoricalBatchFromReturns_10Assets_100Periods(b *testing.B) {
+	numAssets := 10
+	nPeriods := 100
+	returnsMatrix := make([][]float64, numAssets)
+
+	for i := 0; i < numAssets; i++ {
+		returnsMatrix[i] = make([]float64, nPeriods)
+		for j := 0; j < nPeriods; j++ {
+			returnsMatrix[i][j] = 0.01 * float64((i+j)%10-5)
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VarHistoricalBatchFromReturns(returnsMatrix, 0.95)
+	}
+}
+
+func BenchmarkVarHistoricalBatchFromReturns_50Assets_250Periods(b *testing.B) {
+	numAssets := 50
+	nPeriods := 250
+	returnsMatrix := make([][]float64, numAssets)
+
+	for i := 0; i < numAssets; i++ {
+		returnsMatrix[i] = make([]float64, nPeriods)
+		for j := 0; j < nPeriods; j++ {
+			returnsMatrix[i][j] = 0.01 * float64((i+j)%10-5)
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VarHistoricalBatchFromReturns(returnsMatrix, 0.95)
+	}
+}
+
+func BenchmarkVarHistoricalBatchFromReturns_100Assets_500Periods(b *testing.B) {
+	numAssets := 100
+	nPeriods := 500
+	returnsMatrix := make([][]float64, numAssets)
+
+	for i := 0; i < numAssets; i++ {
+		returnsMatrix[i] = make([]float64, nPeriods)
+		for j := 0; j < nPeriods; j++ {
+			returnsMatrix[i][j] = 0.01 * float64((i+j)%10-5)
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VarHistoricalBatchFromReturns(returnsMatrix, 0.95)
 	}
 }

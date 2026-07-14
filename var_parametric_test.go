@@ -271,3 +271,209 @@ func BenchmarkVarParametricBatch_1000(b *testing.B) {
 		VarParametricBatch(means, stddevs, 0.95)
 	}
 }
+func TestVarParametricFromReturns_Basic(t *testing.T) {
+	// Generate synthetic returns with known mean and stddev
+	returns := []float64{
+		0.02, -0.01, 0.03, 0.01, -0.02,
+		0.015, -0.005, 0.025, 0.005, -0.015,
+		0.01, 0.02, -0.01, 0.03, -0.02,
+	}
+	confidence := 0.95
+
+	var_, cvar, err := VarParametricFromReturns(returns, confidence)
+	if err != nil {
+		t.Fatalf("VarParametricFromReturns failed: %v", err)
+	}
+
+	// VaR should be negative (loss) for typical returns
+	if cvar >= var_ {
+		t.Errorf("CVaR should be less than VaR: cvar=%f, var=%f", cvar, var_)
+	}
+
+	// Verify it's finite
+	if math.IsNaN(var_) || math.IsInf(var_, 0) {
+		t.Errorf("VaR is not finite: %f", var_)
+	}
+	if math.IsNaN(cvar) || math.IsInf(cvar, 0) {
+		t.Errorf("CVaR is not finite: %f", cvar)
+	}
+}
+
+func TestVarParametricFromReturns_InsufficientData(t *testing.T) {
+	// Only 1 return - need at least 2
+	returns := []float64{0.01}
+	_, _, err := VarParametricFromReturns(returns, 0.95)
+	if err == nil {
+		t.Error("Expected error for insufficient data")
+	}
+}
+
+func TestVarParametricFromReturns_InvalidConfidence(t *testing.T) {
+	returns := []float64{0.01, 0.02, -0.01}
+
+	_, _, err := VarParametricFromReturns(returns, 0.0)
+	if err == nil {
+		t.Error("Expected error for confidence = 0")
+	}
+
+	_, _, err = VarParametricFromReturns(returns, 1.0)
+	if err == nil {
+		t.Error("Expected error for confidence = 1")
+	}
+
+	_, _, err = VarParametricFromReturns(returns, 1.5)
+	if err == nil {
+		t.Error("Expected error for confidence > 1")
+	}
+}
+
+func TestVarParametricFromPortfolioReturns_Basic(t *testing.T) {
+	// 2 assets, 10 periods
+	dim := 2
+	nPeriods := 10
+	returns := []float64{
+		// Asset 0 returns
+		0.01, 0.02, -0.01, 0.03, -0.02, 0.015, -0.005, 0.025, 0.005, -0.015,
+		// Asset 1 returns
+		-0.01, 0.03, 0.01, -0.02, 0.02, -0.015, 0.025, -0.005, 0.015, 0.005,
+	}
+	weights := []float64{0.6, 0.4}
+	confidence := 0.95
+
+	var_, cvar, err := VarParametricFromPortfolioReturns(returns, weights, dim, nPeriods, confidence)
+	if err != nil {
+		t.Fatalf("VarParametricFromPortfolioReturns failed: %v", err)
+	}
+
+	if cvar >= var_ {
+		t.Errorf("CVaR should be less than VaR: cvar=%f, var=%f", cvar, var_)
+	}
+
+	// Verify finite values
+	if math.IsNaN(var_) || math.IsInf(var_, 0) {
+		t.Errorf("VaR is not finite: %f", var_)
+	}
+	if math.IsNaN(cvar) || math.IsInf(cvar, 0) {
+		t.Errorf("CVaR is not finite: %f", cvar)
+	}
+}
+
+func TestVarParametricFromPortfolioReturns_InsufficientPeriods(t *testing.T) {
+	dim := 2
+	nPeriods := 2 // Need at least dim + 1 = 3
+	returns := make([]float64, dim*nPeriods)
+	weights := []float64{0.5, 0.5}
+
+	_, _, err := VarParametricFromPortfolioReturns(returns, weights, dim, nPeriods, 0.95)
+	if err == nil {
+		t.Error("Expected error for insufficient periods")
+	}
+}
+
+func TestVarParametricFromPortfolioReturns_InvalidDimensions(t *testing.T) {
+	dim := 2
+	nPeriods := 10
+	returns := make([]float64, dim*nPeriods-1) // Wrong size
+	weights := []float64{0.5, 0.5}
+
+	_, _, err := VarParametricFromPortfolioReturns(returns, weights, dim, nPeriods, 0.95)
+	if err == nil {
+		t.Error("Expected error for wrong returns length")
+	}
+
+	returns = make([]float64, dim*nPeriods)
+	weights = []float64{0.5} // Wrong size
+
+	_, _, err = VarParametricFromPortfolioReturns(returns, weights, dim, nPeriods, 0.95)
+	if err == nil {
+		t.Error("Expected error for wrong weights length")
+	}
+}
+
+func TestVarParametricFromPortfolioReturns_ThreeAssets(t *testing.T) {
+	// 3 assets, 20 periods
+	dim := 3
+	nPeriods := 20
+	returns := make([]float64, dim*nPeriods)
+
+	// Generate some synthetic returns
+	for i := 0; i < dim; i++ {
+		for j := 0; j < nPeriods; j++ {
+			returns[i*nPeriods+j] = 0.01 * float64((i+j)%5-2)
+		}
+	}
+
+	weights := []float64{0.5, 0.3, 0.2}
+	confidence := 0.99
+
+	var_, cvar, err := VarParametricFromPortfolioReturns(returns, weights, dim, nPeriods, confidence)
+	if err != nil {
+		t.Fatalf("VarParametricFromPortfolioReturns failed: %v", err)
+	}
+
+	if cvar >= var_ {
+		t.Errorf("CVaR should be less than VaR: cvar=%f, var=%f", cvar, var_)
+	}
+}
+
+func BenchmarkVarParametricFromReturns_50Periods(b *testing.B) {
+	returns := make([]float64, 50)
+	for i := 0; i < 50; i++ {
+		returns[i] = 0.01 * float64(i%10-5)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VarParametricFromReturns(returns, 0.95)
+	}
+}
+
+func BenchmarkVarParametricFromReturns_250Periods(b *testing.B) {
+	returns := make([]float64, 250)
+	for i := 0; i < 250; i++ {
+		returns[i] = 0.01 * float64(i%10-5)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VarParametricFromReturns(returns, 0.95)
+	}
+}
+
+func BenchmarkVarParametricFromPortfolioReturns_10Assets_100Periods(b *testing.B) {
+	dim := 10
+	nPeriods := 100
+	returns := make([]float64, dim*nPeriods)
+	weights := make([]float64, dim)
+
+	for i := 0; i < dim; i++ {
+		weights[i] = 1.0 / float64(dim)
+		for j := 0; j < nPeriods; j++ {
+			returns[i*nPeriods+j] = 0.01 * float64((i+j)%10-5)
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VarParametricFromPortfolioReturns(returns, weights, dim, nPeriods, 0.95)
+	}
+}
+
+func BenchmarkVarParametricFromPortfolioReturns_50Assets_250Periods(b *testing.B) {
+	dim := 50
+	nPeriods := 250
+	returns := make([]float64, dim*nPeriods)
+	weights := make([]float64, dim)
+
+	for i := 0; i < dim; i++ {
+		weights[i] = 1.0 / float64(dim)
+		for j := 0; j < nPeriods; j++ {
+			returns[i*nPeriods+j] = 0.01 * float64((i+j)%10-5)
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VarParametricFromPortfolioReturns(returns, weights, dim, nPeriods, 0.95)
+	}
+}

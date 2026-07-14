@@ -210,3 +210,68 @@ func VarHistoricalBatch(returns [][]float64, weightsMatrix [][]float64, confiden
 
 	return var_, cvar, nil
 }
+
+// VarHistoricalBatchFromReturns computes VaR and CVaR for multiple single-asset return series in batch.
+//
+// Batch processing for multiple single assets, each with its own historical return series.
+// Efficient for risk measurement across many individual assets.
+//
+// Parameters:
+//   - returnsMatrix: Matrix of return series (numAssets × n, row-major)
+//     Each row is a separate asset's historical returns
+//   - confidence: Confidence level (must be in (0, 1))
+//
+// Returns:
+//   - var: VaR values for each asset
+//   - cvar: CVaR values for each asset
+//   - error: nil on success, error otherwise
+func VarHistoricalBatchFromReturns(returnsMatrix [][]float64, confidence float64) (var_, cvar []float64, err error) {
+	if len(returnsMatrix) == 0 {
+		return nil, nil, fmt.Errorf("returnsMatrix cannot be empty")
+	}
+
+	numAssets := len(returnsMatrix)
+	n := len(returnsMatrix[0])
+
+	for i := 1; i < numAssets; i++ {
+		if len(returnsMatrix[i]) != n {
+			return nil, nil, fmt.Errorf("all assets must have same number of periods")
+		}
+	}
+
+	returnsFlat := make([]float64, numAssets*n)
+	for i := 0; i < numAssets; i++ {
+		for j := 0; j < n; j++ {
+			returnsFlat[i*n+j] = returnsMatrix[i][j]
+		}
+	}
+
+	var_ = make([]float64, numAssets)
+	cvar = make([]float64, numAssets)
+
+	ret := C.fc_optim_var_historical_batch_from_returns(
+		(*C.double)(unsafe.Pointer(&returnsFlat[0])),
+		C.size_t(numAssets),
+		C.size_t(n),
+		C.double(confidence),
+		(*C.double)(unsafe.Pointer(&var_[0])),
+		(*C.double)(unsafe.Pointer(&cvar[0])),
+	)
+
+	if ret != 0 {
+		switch ret {
+		case -1:
+			return nil, nil, fmt.Errorf("internal error: NULL pointer")
+		case -2:
+			return nil, nil, fmt.Errorf("size is zero")
+		case -3:
+			return nil, nil, fmt.Errorf("confidence must be in (0, 1)")
+		case -4:
+			return nil, nil, fmt.Errorf("memory allocation failed")
+		default:
+			return nil, nil, fmt.Errorf("unknown error: %d", ret)
+		}
+	}
+
+	return var_, cvar, nil
+}
