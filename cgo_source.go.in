@@ -9,53 +9,51 @@ package optim
 /*
 #cgo CFLAGS: -I${SRCDIR}/include
 #cgo CFLAGS: -I${SRCDIR}/modules/platform/include
-#cgo CFLAGS: -I${SRCDIR}/modules/platform/third_party/gmp
-#cgo CFLAGS: -I${SRCDIR}/modules/platform/third_party/mpfr/src
-#cgo CFLAGS: -I${SRCDIR}/modules/math/include
 #cgo CFLAGS: -I${SRCDIR}/modules/ds/include
-#cgo CFLAGS: -I${SRCDIR}/modules/random/include
-#cgo CFLAGS: -I${SRCDIR}/modules/stats/include
+#cgo CFLAGS: -I${SRCDIR}/modules/math/include
 #cgo CFLAGS: -I${SRCDIR}/modules/matrix/include
-#cgo CFLAGS: -I${SRCDIR}/optim-c
-#cgo CFLAGS: -I${SRCDIR}/modules/platform/src -O2 -Wall -std=c11 @FC_SIMD_CFLAGS@
-#cgo linux CFLAGS: -D_POSIX_C_SOURCE=200112L
-#cgo linux LDFLAGS: ${SRCDIR}/modules/math/build/linux_amd64/libfinkit_math_static.a ${SRCDIR}/modules/ds/build/linux_amd64/libfinkit_ds_static.a ${SRCDIR}/modules/random/build/linux_amd64/libfinkit_random_static.a ${SRCDIR}/modules/stats/build/linux_amd64/libfinkit_stats_static.a ${SRCDIR}/modules/matrix/build/linux_amd64/libfinkit_matrix_static.a ${SRCDIR}/modules/platform/build/linux_amd64/libfinkit_platform_static.a -lm -lgcov
-#cgo darwin,arm64 LDFLAGS: ${SRCDIR}/modules/math/build/darwin_arm64/libfinkit_math_static.a ${SRCDIR}/modules/ds/build/darwin_arm64/libfinkit_ds_static.a ${SRCDIR}/modules/random/build/darwin_arm64/libfinkit_random_static.a ${SRCDIR}/modules/stats/build/darwin_arm64/libfinkit_stats_static.a ${SRCDIR}/modules/matrix/build/darwin_arm64/libfinkit_matrix_static.a ${SRCDIR}/modules/platform/build/darwin_arm64/libfinkit_platform_static.a -lm
-#cgo darwin,amd64 LDFLAGS: ${SRCDIR}/modules/math/build/darwin_x86_64/libfinkit_math_static.a ${SRCDIR}/modules/ds/build/darwin_x86_64/libfinkit_ds_static.a ${SRCDIR}/modules/random/build/darwin_x86_64/libfinkit_random_static.a ${SRCDIR}/modules/stats/build/darwin_x86_64/libfinkit_stats_static.a ${SRCDIR}/modules/matrix/build/darwin_x86_64/libfinkit_matrix_static.a ${SRCDIR}/modules/platform/build/darwin_x86_64/libfinkit_platform_static.a -lm
-#cgo windows LDFLAGS: ${SRCDIR}/modules/math/build/windows_amd64/libfinkit_math_static.a ${SRCDIR}/modules/ds/build/windows_amd64/libfinkit_ds_static.a ${SRCDIR}/modules/random/build/windows_amd64/libfinkit_random_static.a ${SRCDIR}/modules/stats/build/windows_amd64/libfinkit_stats_static.a ${SRCDIR}/modules/matrix/build/windows_amd64/libfinkit_matrix_static.a ${SRCDIR}/modules/platform/build/windows_amd64/libfinkit_platform_static.a -lm
+#cgo CFLAGS: -I${SRCDIR}/modules/stats/include
+#cgo CFLAGS: -I${SRCDIR}/modules/random/include
+#cgo linux,amd64   LDFLAGS: -L${SRCDIR}/modules/platform/build/linux_amd64 -lfinkit_platform_static -lm
+#cgo linux,arm64   LDFLAGS: -L${SRCDIR}/modules/platform/build/linux_arm64 -lfinkit_platform_static -lm
+#cgo darwin,amd64  LDFLAGS: -L${SRCDIR}/modules/platform/build/darwin_amd64 -lfinkit_platform_static -lm
+#cgo darwin,arm64  LDFLAGS: -L${SRCDIR}/modules/platform/build/darwin_arm64 -lfinkit_platform_static -lm
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/modules/platform/build/windows_amd64 -lfinkit_platform_static -lm
 
+#cgo linux,amd64   LDFLAGS: -L${SRCDIR}/modules/ds/build/linux_amd64 -lfinkit_ds_static -lm
+#cgo linux,arm64   LDFLAGS: -L${SRCDIR}/modules/ds/build/linux_arm64 -lfinkit_ds_static -lm
+#cgo darwin,amd64  LDFLAGS: -L${SRCDIR}/modules/ds/build/darwin_amd64 -lfinkit_ds_static -lm
+#cgo darwin,arm64  LDFLAGS: -L${SRCDIR}/modules/ds/build/darwin_arm64 -lfinkit_ds_static -lm
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/modules/ds/build/windows_amd64 -lfinkit_ds_static -lm
 
-#include "least_squares.h"
-#include "greeks.h"
-#include "var_parametric.h"
-#include "var_historical.h"
-#include "var_monte_carlo.h"
+#cgo linux,amd64   LDFLAGS: -L${SRCDIR}/modules/math/build/linux_amd64 -lfinkit_math_static -lm
+#cgo linux,arm64   LDFLAGS: -L${SRCDIR}/modules/math/build/linux_arm64 -lfinkit_math_static -lm
+#cgo darwin,amd64  LDFLAGS: -L${SRCDIR}/modules/math/build/darwin_amd64 -lfinkit_math_static -lm
+#cgo darwin,arm64  LDFLAGS: -L${SRCDIR}/modules/math/build/darwin_arm64 -lfinkit_math_static -lm
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/modules/math/build/windows_amd64 -lfinkit_math_static -lm
 
-// Platform sources (dependency)
-#include "simd_detect.c"
-#include "fc_bignum_init.c"
-#include "fc_bigint.c"
-#include "fc_bigfloat.c"
-#include "fc_precision.c"
-#include "mem_aligned.c"
-#include "error.c"
-#include "fc_init.c"
+#cgo linux,amd64   LDFLAGS: -L${SRCDIR}/modules/matrix/build/linux_amd64 -lfinkit_matrix_static -lm
+#cgo linux,arm64   LDFLAGS: -L${SRCDIR}/modules/matrix/build/linux_arm64 -lfinkit_matrix_static -lm
+#cgo darwin,amd64  LDFLAGS: -L${SRCDIR}/modules/matrix/build/darwin_amd64 -lfinkit_matrix_static -lm
+#cgo darwin,arm64  LDFLAGS: -L${SRCDIR}/modules/matrix/build/darwin_arm64 -lfinkit_matrix_static -lm
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/modules/matrix/build/windows_amd64 -lfinkit_matrix_static -lm
 
-// Platform-specific sources
-#if defined(__linux__)
-  #include "modules/platform/src/platform_linux.c"
-#elif defined(__APPLE__)
-  #include "modules/platform/src/platform_macos.c"
-#elif defined(_WIN32)
-  #include "modules/platform/src/platform_win.c"
-#endif
+#cgo linux,amd64   LDFLAGS: -L${SRCDIR}/modules/stats/build/linux_amd64 -lfinkit_stats_static -lm
+#cgo linux,arm64   LDFLAGS: -L${SRCDIR}/modules/stats/build/linux_arm64 -lfinkit_stats_static -lm
+#cgo darwin,amd64  LDFLAGS: -L${SRCDIR}/modules/stats/build/darwin_amd64 -lfinkit_stats_static -lm
+#cgo darwin,arm64  LDFLAGS: -L${SRCDIR}/modules/stats/build/darwin_arm64 -lfinkit_stats_static -lm
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/modules/stats/build/windows_amd64 -lfinkit_stats_static -lm
 
-// optim sources
-#include "optim-c/least_squares.c"
-#include "optim-c/greeks.c"
-#include "optim-c/var_parametric.c"
-#include "optim-c/var_historical.c"
-#include "optim-c/var_monte_carlo.c"
+#cgo linux,amd64   LDFLAGS: -L${SRCDIR}/modules/random/build/linux_amd64 -lfinkit_random_static -lm
+#cgo linux,arm64   LDFLAGS: -L${SRCDIR}/modules/random/build/linux_arm64 -lfinkit_random_static -lm
+#cgo darwin,amd64  LDFLAGS: -L${SRCDIR}/modules/random/build/darwin_amd64 -lfinkit_random_static -lm
+#cgo darwin,arm64  LDFLAGS: -L${SRCDIR}/modules/random/build/darwin_arm64 -lfinkit_random_static -lm
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/modules/random/build/windows_amd64 -lfinkit_random_static -lm
+
+// Forward declarations for fc_init/fc_cleanup (no public header)
+int fc_init(void);
+void fc_cleanup(void);
+
 */
 import "C"
 
