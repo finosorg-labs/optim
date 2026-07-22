@@ -310,6 +310,74 @@ TEST(var_parametric_from_returns_insufficient_data) {
     ASSERT_EQ(ret, -2);
 }
 
+TEST(var_parametric_exact_standard_normal_95) {
+    /* Standard normal distribution: mean=0, stddev=1, confidence=0.95
+     * VaR = 0 - 1.6448536 * 1 = -1.6448536
+     * CVaR = -1 * (1/sqrt(2*pi)) * exp(-1.6448536^2/2) / (1-0.95) = -2.0627493
+     */
+    double mean = 0.0;
+    double stddev = 1.0;
+    double confidence = 0.95;
+    double var, cvar;
+
+    int ret = fc_optim_var_parametric(mean, stddev, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(fabs(var - (-1.6448536)) < 0.0001);
+    ASSERT_TRUE(fabs(cvar - (-2.0627493)) < 0.0001);
+}
+
+TEST(var_parametric_exact_standard_normal_99) {
+    /* Standard normal distribution: mean=0, stddev=1, confidence=0.99
+     * VaR = 0 - 2.3263479 * 1 = -2.3263479
+     * CVaR ≈ -2.6652
+     */
+    double mean = 0.0;
+    double stddev = 1.0;
+    double confidence = 0.99;
+    double var, cvar;
+
+    int ret = fc_optim_var_parametric(mean, stddev, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(fabs(var - (-2.3263479)) < 0.0001);
+    ASSERT_TRUE(fabs(cvar - (-2.6652)) < 0.001);
+}
+
+TEST(var_parametric_exact_with_mean_and_scale) {
+    /* Distribution: mean=0.01, stddev=0.05, confidence=0.95
+     * VaR = 0.01 - 1.6448536 * 0.05 = 0.01 - 0.08224268 = -0.07224268
+     * CVaR = 0.01 - 0.05 * 2.0627493 = -0.09313747
+     */
+    double mean = 0.01;
+    double stddev = 0.05;
+    double confidence = 0.95;
+    double var, cvar;
+
+    int ret = fc_optim_var_parametric(mean, stddev, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(fabs(var - (-0.07224268)) < 0.00001);
+    ASSERT_TRUE(fabs(cvar - (-0.09313747)) < 0.00001);
+}
+
+TEST(var_parametric_exact_90_confidence) {
+    /* Standard normal: mean=0, stddev=1, confidence=0.90
+     * VaR = 0 - 1.2815516 * 1 = -1.2815516
+     * CVaR ≈ -1.755
+     */
+    double mean = 0.0;
+    double stddev = 1.0;
+    double confidence = 0.90;
+    double var, cvar;
+
+    int ret = fc_optim_var_parametric(mean, stddev, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(fabs(var - (-1.2815516)) < 0.0001);
+    ASSERT_TRUE(fabs(cvar - (-1.755)) < 0.001);
+}
+
 void register_var_parametric_tests(void) {
     RUN_TEST(var_parametric_basic);
     RUN_TEST(var_parametric_99_confidence);
@@ -330,4 +398,8 @@ void register_var_parametric_tests(void) {
     RUN_TEST(var_parametric_from_portfolio_returns_basic);
     RUN_TEST(var_parametric_from_returns_null_inputs);
     RUN_TEST(var_parametric_from_returns_insufficient_data);
+    RUN_TEST(var_parametric_exact_standard_normal_95);
+    RUN_TEST(var_parametric_exact_standard_normal_99);
+    RUN_TEST(var_parametric_exact_with_mean_and_scale);
+    RUN_TEST(var_parametric_exact_90_confidence);
 }

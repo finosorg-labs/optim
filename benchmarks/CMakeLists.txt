@@ -14,13 +14,6 @@ target_include_directories(bench_framework
         ${CMAKE_SOURCE_DIR}/modules/platform/include
 )
 
-target_link_libraries(bench_framework
-    PUBLIC
-        finkit_optim_static_base
-        finkit::platform
-      finkit::ds
-)
-
 # Benchmark executable
 add_executable(optim_benchmarks
     bench_main.c
@@ -32,16 +25,13 @@ add_executable(optim_benchmarks
     bench_var_monte_carlo.c
 )
 
-# Link with benchmark framework and optim library
+# Link with benchmark framework and merged optim library
 target_link_libraries(optim_benchmarks
     PRIVATE
         bench_framework
-        finkit_optim_static_base
-        finkit::platform
-        finkit::ds
-        finkit::math
-        finkit::random
+        finkit_optim_static_interface
         m
+        gfortran
 )
 
 target_compile_definitions(optim_benchmarks PRIVATE

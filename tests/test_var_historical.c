@@ -335,6 +335,105 @@ TEST(var_historical_batch_from_returns_zero_size) {
     ASSERT_EQ(ret, -2);
 }
 
+TEST(var_historical_exact_sorted_90) {
+    /* 10 sorted returns, 90% confidence
+     * Implementation uses linear interpolation for quantile
+     * With 10 values and 90% confidence, interpolates between indices
+     */
+    double returns[] = {-0.10, -0.08, -0.05, -0.03, -0.01, 0.0, 0.01, 0.02, 0.03, 0.05};
+    size_t n = 10;
+    double confidence = 0.90;
+    double var, cvar;
+
+    int ret = fc_optim_var_historical(returns, n, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(fabs(var - (-0.082)) < 1e-10);  // Interpolated value
+    ASSERT_TRUE(cvar <= var);
+    ASSERT_TRUE(fabs(cvar - (-0.10)) < 1e-10);  // Average of tail values
+}
+
+TEST(var_historical_exact_sorted_95) {
+    /* 20 sorted returns, 95% confidence
+     * Implementation uses linear interpolation
+     */
+    double returns[] = {-0.10, -0.09, -0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, -0.01,
+                        0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09};
+    size_t n = 20;
+    double confidence = 0.95;
+    double var, cvar;
+
+    int ret = fc_optim_var_historical(returns, n, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(fabs(var - (-0.0905)) < 1e-10);  // Interpolated value
+    ASSERT_TRUE(fabs(cvar - (-0.10)) < 1e-10);
+}
+
+TEST(var_historical_exact_80_confidence) {
+    /* 10 sorted returns, 80% confidence
+     * Implementation uses linear interpolation
+     */
+    double returns[] = {-0.10, -0.08, -0.05, -0.03, -0.01, 0.0, 0.01, 0.02, 0.03, 0.05};
+    size_t n = 10;
+    double confidence = 0.80;
+    double var, cvar;
+
+    int ret = fc_optim_var_historical(returns, n, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(fabs(var - (-0.056)) < 1e-10);  // Interpolated value
+    ASSERT_TRUE(fabs(cvar - (-0.10)) < 1e-10);  // Average of tail
+}
+
+TEST(var_historical_exact_50_confidence) {
+    /* 10 sorted returns, 50% confidence (median case)
+     * Implementation uses linear interpolation
+     */
+    double returns[] = {-0.10, -0.08, -0.06, -0.04, -0.02, 0.0, 0.02, 0.04, 0.06, 0.08};
+    size_t n = 10;
+    double confidence = 0.50;
+    double var, cvar;
+
+    int ret = fc_optim_var_historical(returns, n, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(fabs(var - (-0.01)) < 1e-10);  // Interpolated median
+    ASSERT_TRUE(fabs(cvar - (-0.06)) < 1e-10);  // Average of lower half
+}
+
+TEST(var_historical_exact_portfolio_weights) {
+    /* 2 assets, 5 periods, equal weights
+     * Asset 1: [0.10, -0.05, 0.03, -0.02, 0.04]
+     * Asset 2: [-0.04, 0.08, -0.06, 0.02, -0.01]
+     * Portfolio returns (0.5*A1 + 0.5*A2):
+     * Period 0: 0.5*0.10 + 0.5*(-0.04) = 0.03
+     * Period 1: 0.5*(-0.05) + 0.5*0.08 = 0.015
+     * Period 2: 0.5*0.03 + 0.5*(-0.06) = -0.015
+     * Period 3: 0.5*(-0.02) + 0.5*0.02 = 0.0
+     * Period 4: 0.5*0.04 + 0.5*(-0.01) = 0.015
+     * Sorted: [-0.015, 0.0, 0.015, 0.015, 0.03]
+     * VaR@80% with interpolation
+     */
+    double returns[] = {
+        0.10, -0.05, 0.03, -0.02, 0.04,
+        -0.04, 0.08, -0.06, 0.02, -0.01
+    };
+    double weights[] = {0.5, 0.5};
+    size_t m = 2;
+    size_t n = 5;
+    double confidence = 0.80;
+    double var, cvar;
+
+    int ret = fc_optim_var_historical_portfolio(returns, weights, m, n, confidence, &var, &cvar);
+
+    ASSERT_EQ(ret, 0);
+    /* VaR will be interpolated, just verify it's negative and CVaR <= VaR */
+    ASSERT_TRUE(var < 0.0);
+    ASSERT_TRUE(cvar <= var);
+    ASSERT_TRUE(cvar < -0.01);  // Should be reasonably negative
+}
+
 void register_var_historical_tests(void) {
     RUN_TEST(var_historical_basic);
     RUN_TEST(var_historical_95_confidence);
@@ -355,4 +454,9 @@ void register_var_historical_tests(void) {
     RUN_TEST(var_historical_batch_from_returns_consistency);
     RUN_TEST(var_historical_batch_from_returns_null_inputs);
     RUN_TEST(var_historical_batch_from_returns_zero_size);
+    RUN_TEST(var_historical_exact_sorted_90);
+    RUN_TEST(var_historical_exact_sorted_95);
+    RUN_TEST(var_historical_exact_80_confidence);
+    RUN_TEST(var_historical_exact_50_confidence);
+    RUN_TEST(var_historical_exact_portfolio_weights);
 }

@@ -10,6 +10,13 @@
 #include <string.h>
 
 TEST(least_squares_basic) {
+    /* X (column-major): col0=[1,1,1,1,1], col1=[1,2,3,4,5]
+     * y = [2, 4, 5, 4, 5]
+     * Solving: X^T X * beta = X^T y
+     * X^T X = [[5, 15], [15, 55]]
+     * X^T y = [20, 66]
+     * Solution: beta = [2.2, 0.6]
+     */
     double X[] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 4.0, 5.0};
     double y[] = {2.0, 4.0, 5.0, 4.0, 5.0};
     double beta[2];
@@ -17,8 +24,8 @@ TEST(least_squares_basic) {
     int ret = fc_optim_least_squares(X, y, 5, 2, 0, beta);
 
     ASSERT_EQ(ret, 0);
-    ASSERT_TRUE(fabs(beta[0] - 2.2) < 0.1);
-    ASSERT_TRUE(fabs(beta[1] - 0.6) < 0.1);
+    ASSERT_TRUE(fabs(beta[0] - 2.2) < 1e-10);
+    ASSERT_TRUE(fabs(beta[1] - 0.6) < 1e-10);
 }
 
 TEST(least_squares_perfect_fit) {
@@ -98,6 +105,9 @@ TEST(least_squares_batch_invalid_dimensions) {
 }
 
 TEST(least_squares_ext_basic) {
+    /* Same as least_squares_basic, but with extended outputs
+     * beta = [2.2, 0.6]
+     */
     double X[] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 4.0, 5.0};
     double y[] = {2.0, 4.0, 5.0, 4.0, 5.0};
     double beta[2];
@@ -108,8 +118,8 @@ TEST(least_squares_ext_basic) {
     int ret = fc_optim_least_squares_ext(X, y, 5, 2, 0, beta, residuals, &r_squared, &std_error);
 
     ASSERT_EQ(ret, 0);
-    ASSERT_TRUE(fabs(beta[0] - 2.2) < 0.1);
-    ASSERT_TRUE(fabs(beta[1] - 0.6) < 0.1);
+    ASSERT_TRUE(fabs(beta[0] - 2.2) < 1e-10);
+    ASSERT_TRUE(fabs(beta[1] - 0.6) < 1e-10);
     ASSERT_TRUE(r_squared >= 0.0 && r_squared <= 1.0);
     ASSERT_TRUE(std_error >= 0.0);
 

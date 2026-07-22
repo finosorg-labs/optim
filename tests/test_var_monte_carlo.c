@@ -418,6 +418,133 @@ TEST(var_monte_carlo_batch_insufficient_data) {
     fc_optim_var_monte_carlo_state_destroy(state);
 }
 
+TEST(var_monte_carlo_convergence_to_parametric) {
+    /* For single asset with normal returns, Monte Carlo should converge to parametric VaR
+     * Use large n_paths to reduce Monte Carlo error
+     */
+    size_t dim = 1;
+    size_t n_paths = 50000;
+
+    fc_var_mc_state_t* state = fc_optim_var_monte_carlo_state_create(dim, n_paths, 12345);
+    ASSERT_NOT_NULL(state);
+
+    double mean = 0.001;
+    double variance = 0.0004;  // stddev = 0.02
+    double cov_matrix[] = {variance};
+    double weights[] = {1.0};
+    double confidence = 0.95;
+    double var_mc, cvar_mc;
+
+    int ret = fc_optim_var_monte_carlo(state, &mean, cov_matrix, weights, dim, confidence, &var_mc, &cvar_mc);
+    ASSERT_EQ(ret, 0);
+
+    /* Parametric VaR = mean - 1.6448536 * sqrt(variance) = 0.001 - 1.6448536 * 0.02 ≈ -0.03190
+     * Monte Carlo should be within 5% of parametric (allowing for Monte Carlo error)
+     */
+    double var_parametric = mean - 1.6448536 * sqrt(variance);
+    double var_error = fabs((var_mc - var_parametric) / var_parametric);
+    ASSERT_TRUE(var_error < 0.05);  // Within 5%
+
+    fc_optim_var_monte_carlo_state_destroy(state);
+}
+
+TEST(var_monte_carlo_zero_mean_unit_variance) {
+    /* Standard normal: mean=0, variance=1
+     * VaR@95% should be approximately -1.6449
+     */
+    size_t dim = 1;
+    size_t n_paths = 50000;
+
+    fc_var_mc_state_t* state = fc_optim_var_monte_carlo_state_create(dim, n_paths, 54321);
+    ASSERT_NOT_NULL(state);
+
+    double mean = 0.0;
+    double cov_matrix[] = {1.0};
+    double weights[] = {1.0};
+    double confidence = 0.95;
+    double var, cvar;
+
+    int ret = fc_optim_var_monte_carlo(state, &mean, cov_matrix, weights, dim, confidence, &var, &cvar);
+    ASSERT_EQ(ret, 0);
+
+    ASSERT_TRUE(fabs(var - (-1.6449)) < 0.05);  // Within 0.05 of theoretical value
+    ASSERT_TRUE(cvar < var);
+    ASSERT_TRUE(fabs(cvar - (-2.0627)) < 0.1);  // CVaR theoretical ≈ -2.0627
+
+    fc_optim_var_monte_carlo_state_destroy(state);
+}
+
+TEST(var_monte_carlo_portfolio_diversification) {
+    /* Two uncorrelated assets with equal means and variances
+     * Portfolio variance = w1^2*var1 + w2^2*var2 (no covariance term)
+     * With equal weights (0.5, 0.5): portfolio_var = 0.5*var
+     * Portfolio VaR should be less extreme than individual asset VaR
+     */
+    size_t dim = 2;
+    size_t n_paths = 20000;
+
+    fc_var_mc_state_t* state = fc_optim_var_monte_carlo_state_create(dim, n_paths, 99999);
+    ASSERT_NOT_NULL(state);
+
+    double means[] = {0.0, 0.0};
+    double cov_matrix[] = {
+        1.0, 0.0,
+        0.0, 1.0
+    };
+    double weights[] = {0.5, 0.5};
+    double confidence = 0.95;
+    double var_portfolio, cvar_portfolio;
+
+    int ret = fc_optim_var_monte_carlo(state, means, cov_matrix, weights, dim, confidence, &var_portfolio, &cvar_portfolio);
+    ASSERT_EQ(ret, 0);
+
+    /* Theoretical: portfolio stddev = sqrt(0.5^2*1 + 0.5^2*1) = sqrt(0.5) ≈ 0.7071
+     * Portfolio VaR@95% ≈ 0 - 1.6449 * 0.7071 ≈ -1.163
+     */
+    double expected_var = -1.6449 * sqrt(0.5);
+    ASSERT_TRUE(fabs(var_portfolio - expected_var) < 0.1);
+
+    fc_optim_var_monte_carlo_state_destroy(state);
+}
+
+TEST(var_monte_carlo_positive_correlation_increases_risk) {
+    /* Two assets with positive correlation should have higher portfolio VaR than uncorrelated
+     * Asset 1: mean=0, var=1
+     * Asset 2: mean=0, var=1
+     * Correlation = 0.8
+     * Covariance matrix: [[1.0, 0.8], [0.8, 1.0]]
+     * Portfolio variance with weights (0.5, 0.5): 0.25 + 0.25 + 2*0.5*0.5*0.8 = 0.9
+     */
+    size_t dim = 2;
+    size_t n_paths = 20000;
+
+    fc_var_mc_state_t* state = fc_optim_var_monte_carlo_state_create(dim, n_paths, 11111);
+    ASSERT_NOT_NULL(state);
+
+    double means[] = {0.0, 0.0};
+    double cov_matrix[] = {
+        1.0, 0.8,
+        0.8, 1.0
+    };
+    double weights[] = {0.5, 0.5};
+    double confidence = 0.95;
+    double var_corr, cvar_corr;
+
+    int ret = fc_optim_var_monte_carlo(state, means, cov_matrix, weights, dim, confidence, &var_corr, &cvar_corr);
+    ASSERT_EQ(ret, 0);
+
+    /* Theoretical: portfolio stddev = sqrt(0.9) ≈ 0.9487
+     * Portfolio VaR@95% ≈ 0 - 1.6449 * 0.9487 ≈ -1.560
+     */
+    double expected_var = -1.6449 * sqrt(0.9);
+    ASSERT_TRUE(fabs(var_corr - expected_var) < 0.1);
+
+    /* Should be more extreme than uncorrelated case (≈ -1.163) */
+    ASSERT_TRUE(var_corr < -1.1);
+
+    fc_optim_var_monte_carlo_state_destroy(state);
+}
+
 void register_var_monte_carlo_tests(void) {
     RUN_TEST(var_monte_carlo_state_create_destroy);
     RUN_TEST(var_monte_carlo_state_create_invalid);
@@ -437,4 +564,8 @@ void register_var_monte_carlo_tests(void) {
     RUN_TEST(var_monte_carlo_batch_null_inputs);
     RUN_TEST(var_monte_carlo_batch_zero_size);
     RUN_TEST(var_monte_carlo_batch_insufficient_data);
+    RUN_TEST(var_monte_carlo_convergence_to_parametric);
+    RUN_TEST(var_monte_carlo_zero_mean_unit_variance);
+    RUN_TEST(var_monte_carlo_portfolio_diversification);
+    RUN_TEST(var_monte_carlo_positive_correlation_increases_risk);
 }

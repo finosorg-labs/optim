@@ -50,6 +50,12 @@ package optim
 #cgo darwin,arm64  LDFLAGS: -L${SRCDIR}/modules/random/build/darwin_arm64 -lfinkit_random_static -lm
 #cgo windows,amd64 LDFLAGS: -L${SRCDIR}/modules/random/build/windows_amd64 -lfinkit_random_static -lm
 
+#cgo linux,amd64   LDFLAGS: -L${SRCDIR}/build/linux_amd64 -lfinkit_optim_static -lm -lgfortran -lpthread -lgcov
+#cgo linux,arm64   LDFLAGS: -L${SRCDIR}/build/linux_arm64 -lfinkit_optim_static -lm -lgfortran -lpthread -lgcov
+#cgo darwin,amd64  LDFLAGS: -L${SRCDIR}/build/darwin_amd64 -lfinkit_optim_static -lm -lgfortran -lpthread -lgcov
+#cgo darwin,arm64  LDFLAGS: -L${SRCDIR}/build/darwin_arm64 -lfinkit_optim_static -lm -lgfortran -lpthread -lgcov
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/build/windows_amd64 -lfinkit_optim_static -lm -lgfortran -lpthread -lgcov
+
 // Forward declarations for fc_init/fc_cleanup (no public header)
 int fc_init(void);
 void fc_cleanup(void);

@@ -14,15 +14,12 @@ add_executable(optim_tests
     test_var_monte_carlo.c
 )
 
-# Link with optim library
+# Link with merged optim library (includes all dependencies)
 target_link_libraries(optim_tests
     PRIVATE
-        finkit_optim_static_base
-     finkit::ds
-        finkit::math
-        finkit::random
-        finkit::platform
+        finkit_optim_static_interface
         m
+        gfortran
 )
 
 target_compile_definitions(optim_tests PRIVATE

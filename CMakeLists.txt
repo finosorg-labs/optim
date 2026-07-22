@@ -31,285 +31,7 @@ configure_file(
     @ONLY
 )
 
-# Use prebuilt platform library
-if(NOT TARGET finkit::platform)
-    # Detect platform
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-            set(PLATFORM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/platform/build/darwin_arm64")
-        else()
-            set(PLATFORM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/platform/build/darwin_x86_64")
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(PLATFORM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/platform/build/linux_amd64")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(PLATFORM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/platform/build/windows_amd64")
-    else()
-        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
-    endif()
-
-    # Import prebuilt platform library
-    add_library(finkit_platform_static STATIC IMPORTED)
-    set_target_properties(finkit_platform_static PROPERTIES
-        IMPORTED_LOCATION "${PLATFORM_BUILD_DIR}/libfinkit_platform_static.a"
-    )
-    target_include_directories(finkit_platform_static INTERFACE
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/platform/include"
-    )
-    add_library(finkit::platform ALIAS finkit_platform_static)
-endif()
-
-# Use prebuilt ds library
-if(NOT TARGET finkit::ds)
-    # Detect platform for ds
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-            set(DS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/build/darwin_arm64")
-        else()
-        set(DS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/build/darwin_x86_64")
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(DS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/build/linux_amd64")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(DS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/build/windows_amd64")
-    else()
-        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
-    endif()
-
-    # Import prebuilt ds library
-    add_library(finkit_ds_static STATIC IMPORTED)
-    set_target_properties(finkit_ds_static PROPERTIES
-        IMPORTED_LOCATION "${DS_BUILD_DIR}/libfinkit_ds_static.a"
-    )
-    target_include_directories(finkit_ds_static INTERFACE
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/include"
-    )
-    add_library(finkit::ds ALIAS finkit_ds_static)
-endif()
-
-# Use prebuilt math library
-if(NOT TARGET finkit::math)
-    # Detect platform for math
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-            set(MATH_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/math/build/darwin_arm64")
-        else()
-            set(MATH_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/math/build/darwin_x86_64")
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(MATH_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/math/build/linux_amd64")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(MATH_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/math/build/windows_amd64")
-    else()
-        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
-    endif()
-
-    # Import prebuilt math library
-    add_library(finkit_math_static STATIC IMPORTED)
-    set_target_properties(finkit_math_static PROPERTIES
-        IMPORTED_LOCATION "${MATH_BUILD_DIR}/libfinkit_math_static.a"
-    )
-    target_include_directories(finkit_math_static INTERFACE
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/math/include"
-    )
-    add_library(finkit::math ALIAS finkit_math_static)
-endif()
-
-# Use prebuilt random library
-if(NOT TARGET finkit::random)
-    # Detect platform for random
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-            set(RANDOM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/build/darwin_arm64")
-        else()
-            set(RANDOM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/build/darwin_x86_64")
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(RANDOM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/build/linux_amd64")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(RANDOM_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/build/windows_amd64")
-    else()
-        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
-    endif()
-
-    # Import prebuilt random library
-    add_library(finkit_random_static STATIC IMPORTED)
-    set_target_properties(finkit_random_static PROPERTIES
-        IMPORTED_LOCATION "${RANDOM_BUILD_DIR}/libfinkit_random_static.a"
-    )
-    target_include_directories(finkit_random_static INTERFACE
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/random/include"
-    )
-    add_library(finkit::random ALIAS finkit_random_static)
-endif()
-
-# Use prebuilt stats library
-if(NOT TARGET finkit::stats)
-    # Detect platform for stats
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-            set(STATS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/build/darwin_arm64")
-        else()
-            set(STATS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/build/darwin_x86_64")
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(STATS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/build/linux_amd64")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(STATS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/build/windows_amd64")
-    else()
-        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
-    endif()
-
-    # Import prebuilt stats library
-    add_library(finkit_stats_static STATIC IMPORTED)
-    set_target_properties(finkit_stats_static PROPERTIES
-        IMPORTED_LOCATION "${STATS_BUILD_DIR}/libfinkit_stats_static.a"
-    )
-    target_include_directories(finkit_stats_static INTERFACE
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/include"
-    )
-    add_library(finkit::stats ALIAS finkit_stats_static)
-endif()
-
-# Use prebuilt sort library
-if(NOT TARGET finkit::sort)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-            set(SORT_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/sort/build/darwin_arm64")
-        else()
-            set(SORT_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/sort/build/darwin_x86_64")
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(SORT_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/sort/build/linux_amd64")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(SORT_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/sort/build/windows_amd64")
-    else()
-        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
-    endif()
-
-    # Import prebuilt sort library
-    add_library(finkit_sort_static STATIC IMPORTED)
-    set_target_properties(finkit_sort_static PROPERTIES
-        IMPORTED_LOCATION "${SORT_BUILD_DIR}/libfinkit_sort_static.a"
-    )
-    target_include_directories(finkit_sort_static INTERFACE
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/sort/include"
-    )
-    add_library(finkit::sort ALIAS finkit_sort_static)
-endif()
-
-# Use prebuilt matrix library
-if(NOT TARGET finkit::matrix)
-    # Detect platform for matrix
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-            set(MATRIX_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/build/darwin_arm64")
-        else()
-            set(MATRIX_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/build/darwin_x86_64")
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(MATRIX_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/build/linux_amd64")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(MATRIX_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/build/windows_amd64")
-    else()
-        message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
-    endif()
-
-    # Import prebuilt matrix library
-    add_library(finkit_matrix_static STATIC IMPORTED)
-    set_target_properties(finkit_matrix_static PROPERTIES
-        IMPORTED_LOCATION "${MATRIX_BUILD_DIR}/libfinkit_matrix_static.a"
-    )
-    target_include_directories(finkit_matrix_static INTERFACE
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/include"
-    )
-    add_library(finkit::matrix ALIAS finkit_matrix_static)
-endif()
-
-# optim module sources
-set(OPTIM_SOURCES
-    optim-c/least_squares.c
-    optim-c/greeks.c
-    optim-c/var_parametric.c
-    optim-c/var_historical.c
-    optim-c/var_monte_carlo.c
-)
-
-# Copy dependency headers to a separate installed-headers directory for distribution
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers/
-     FILES_MATCHING PATTERN "*.h")
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/modules/platform/include/
-     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers/
-     FILES_MATCHING PATTERN "*.h")
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/include/
-     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers/
-     FILES_MATCHING PATTERN "*.h")
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/modules/sort/include/
-     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers/
-     FILES_MATCHING PATTERN "*.h")
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/modules/math/include/
-     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers/
-     FILES_MATCHING PATTERN "*.h")
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/modules/random/include/
-     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers/
-     FILES_MATCHING PATTERN "*.h")
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/include/
-     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers/
-     FILES_MATCHING PATTERN "*.h")
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/include/
-     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/installed-headers/
-     FILES_MATCHING PATTERN "*.h")
-
-# Create object library
-add_library(finkit_optim OBJECT ${OPTIM_SOURCES})
-
-target_include_directories(finkit_optim
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/platform/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/math/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/ds/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/random/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/stats/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/sort/include
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/matrix/include>
-        $<INSTALL_INTERFACE:include>
-)
-
-target_compile_definitions(finkit_optim PRIVATE FC_STATIC_BUILD)
-
-# Set compile flags for SIMD variants based on detected level
-if(FC_SIMD_LEVEL STREQUAL "AVX512")
-    set_source_files_properties(optim-c/least_squares.c PROPERTIES COMPILE_FLAGS "${FC_AVX512_FLAGS}")
-    set_source_files_properties(optim-c/greeks.c PROPERTIES COMPILE_FLAGS "${FC_AVX512_FLAGS}")
-    set_source_files_properties(optim-c/var_parametric.c PROPERTIES COMPILE_FLAGS "${FC_AVX512_FLAGS}")
-    set_source_files_properties(optim-c/var_historical.c PROPERTIES COMPILE_FLAGS "${FC_AVX512_FLAGS}")
-    set_source_files_properties(optim-c/var_monte_carlo.c PROPERTIES COMPILE_FLAGS "${FC_AVX512_FLAGS}")
-elseif(FC_SIMD_LEVEL STREQUAL "AVX2")
-    set_source_files_properties(optim-c/least_squares.c PROPERTIES COMPILE_FLAGS "${FC_AVX2_FLAGS}")
-    set_source_files_properties(optim-c/greeks.c PROPERTIES COMPILE_FLAGS "${FC_AVX2_FLAGS}")
-    set_source_files_properties(optim-c/var_parametric.c PROPERTIES COMPILE_FLAGS "${FC_AVX2_FLAGS}")
-    set_source_files_properties(optim-c/var_historical.c PROPERTIES COMPILE_FLAGS "${FC_AVX2_FLAGS}")
-    set_source_files_properties(optim-c/var_monte_carlo.c PROPERTIES COMPILE_FLAGS "${FC_AVX2_FLAGS}")
-elseif(FC_SIMD_LEVEL STREQUAL "SSE42")
-    set_source_files_properties(optim-c/least_squares.c PROPERTIES COMPILE_FLAGS "${FC_SSE42_FLAGS}")
-    set_source_files_properties(optim-c/greeks.c PROPERTIES COMPILE_FLAGS "${FC_SSE42_FLAGS}")
-    set_source_files_properties(optim-c/var_parametric.c PROPERTIES COMPILE_FLAGS "${FC_SSE42_FLAGS}")
-    set_source_files_properties(optim-c/var_historical.c PROPERTIES COMPILE_FLAGS "${FC_SSE42_FLAGS}")
-    set_source_files_properties(optim-c/var_monte_carlo.c PROPERTIES COMPILE_FLAGS "${FC_SSE42_FLAGS}")
-endif()
-
-# Create base static library (without platform)
-add_library(finkit_optim_static_base STATIC $<TARGET_OBJECTS:finkit_optim>)
-target_include_directories(finkit_optim_static_base
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-)
-
-# Determine optim build directory
+# Detect platform for library paths
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
         set(OPTIM_BUILD_DIR "darwin_arm64")
@@ -322,97 +44,70 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(OPTIM_BUILD_DIR "windows_amd64")
 endif()
 
-# Merge static libraries into a single library
-set(MERGED_LIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}/libfinkit_optim_static.a)
-set(PLATFORM_LIB_PATH "${PLATFORM_BUILD_DIR}/libfinkit_platform_static.a")
-set(DS_LIB_PATH "${DS_BUILD_DIR}/libfinkit_ds_static.a")
-set(MATH_LIB_PATH "${MATH_BUILD_DIR}/libfinkit_math_static.a")
-set(RANDOM_LIB_PATH "${RANDOM_BUILD_DIR}/libfinkit_random_static.a")
-set(STATS_LIB_PATH "${STATS_BUILD_DIR}/libfinkit_stats_static.a")
-set(MATRIX_LIB_PATH "${MATRIX_BUILD_DIR}/libfinkit_matrix_static.a")
-set(SORT_LIB_PATH "${SORT_BUILD_DIR}/libfinkit_sort_static.a")
+# Build optim-c subdirectory (creates optim_obj target)
+add_subdirectory(optim-c)
 
+# Create base static library (without dependencies)
+add_library(finkit_optim_static_base STATIC $<TARGET_OBJECTS:optim_obj>)
+target_include_directories(finkit_optim_static_base
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Merge static libraries with deduplication
+# Use build-specific path to avoid conflicts between different build types (sanitizers)
+set(MERGED_LIB_PATH ${CMAKE_CURRENT_BINARY_DIR}/libfinkit_optim_static.a)
+# Fixed path for Go cgo bindings
+set(FINAL_LIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}/libfinkit_optim_static.a)
+
+# Determine merge tool based on platform
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    # Windows: use lib.exe to merge libraries
-    add_custom_command(
-        OUTPUT ${MERGED_LIB_PATH}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}
-        COMMAND lib.exe /OUT:${MERGED_LIB_PATH}
-            $<TARGET_FILE:finkit_optim_static_base>
-            ${DS_LIB_PATH}
-            ${MATH_LIB_PATH}
-            ${RANDOM_LIB_PATH}
-            ${STATS_LIB_PATH}
-            ${MATRIX_LIB_PATH}
-            ${SORT_LIB_PATH}
-         ${PLATFORM_LIB_PATH}
-        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${STATS_LIB_PATH} ${MATRIX_LIB_PATH} ${PLATFORM_LIB_PATH}
-        COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
-        VERBATIM
-    )
+    set(MERGE_TOOL "lib.exe")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    # macOS: use libtool to merge libraries
-    add_custom_command(
-        OUTPUT ${MERGED_LIB_PATH}
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}
-      COMMAND libtool -static -o ${MERGED_LIB_PATH}
-            $<TARGET_FILE:finkit_optim_static_base>
-            ${DS_LIB_PATH}
-            ${MATH_LIB_PATH}
-            ${RANDOM_LIB_PATH}
-            ${STATS_LIB_PATH}
-            ${MATRIX_LIB_PATH}
-            ${SORT_LIB_PATH}
-            ${PLATFORM_LIB_PATH}
-            2>&1 | grep -v "warning duplicate member name" || true
-        DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${STATS_LIB_PATH} ${MATRIX_LIB_PATH} ${PLATFORM_LIB_PATH}
-        COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
-        VERBATIM
-    )
+    set(MERGE_TOOL "libtool")
 else()
-    # Linux: use ar with MRI script to merge libraries
-    set(MRI_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/merge_libs.mri)
-    file(GENERATE OUTPUT ${MRI_SCRIPT} CONTENT
-"CREATE ${MERGED_LIB_PATH}
-ADDLIB $<TARGET_FILE:finkit_optim_static_base>
-ADDLIB ${DS_LIB_PATH}
-ADDLIB ${MATH_LIB_PATH}
-ADDLIB ${RANDOM_LIB_PATH}
-ADDLIB ${STATS_LIB_PATH}
-ADDLIB ${MATRIX_LIB_PATH}
-ADDLIB ${SORT_LIB_PATH}
-ADDLIB ${PLATFORM_LIB_PATH}
-SAVE
-END
-")
-
-    add_custom_command(
-      OUTPUT ${MERGED_LIB_PATH}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}
-        COMMAND ${CMAKE_AR} -M < ${MRI_SCRIPT}
-      DEPENDS finkit_optim_static_base ${DS_LIB_PATH} ${MATH_LIB_PATH} ${RANDOM_LIB_PATH} ${STATS_LIB_PATH} ${MATRIX_LIB_PATH} ${SORT_LIB_PATH} ${PLATFORM_LIB_PATH} ${MRI_SCRIPT}
-        COMMENT "Merging static libraries into ${MERGED_LIB_PATH}"
-      VERBATIM
-    )
+    set(MERGE_TOOL "${CMAKE_AR}")
 endif()
+
+# Unified merge command for all platforms
+set(MERGE_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/merge_libs.sh)
+
+add_custom_command(
+    OUTPUT ${MERGED_LIB_PATH}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/${OPTIM_BUILD_DIR}
+    COMMAND bash ${MERGE_SCRIPT}
+        ${MERGED_LIB_PATH}
+        $<TARGET_FILE:finkit_optim_static_base>
+        ${MERGE_TOOL}
+        --mode=smart
+        --project-root=${CMAKE_CURRENT_SOURCE_DIR}
+        --build-subdir=${OPTIM_BUILD_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MERGED_LIB_PATH} ${FINAL_LIB_PATH}
+    DEPENDS finkit_optim_static_base ${MERGE_SCRIPT}
+    COMMENT "Merging static libraries with smart deduplication"
+    VERBATIM
+)
 
 # Create custom target to trigger the merge
 add_custom_target(finkit_optim_static ALL
     DEPENDS ${MERGED_LIB_PATH}
     COMMAND ${CMAKE_COMMAND} -E echo "Merged library created at: ${MERGED_LIB_PATH}"
+    COMMAND ${CMAKE_COMMAND} -E echo "Final library for Go: ${FINAL_LIB_PATH}"
 )
 
 # Create interface library for linking
 add_library(finkit_optim_static_interface INTERFACE)
 target_include_directories(finkit_optim_static_interface
     INTERFACE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(finkit_optim_static_interface
     INTERFACE
-        m
         ${MERGED_LIB_PATH}
+        m
+        gfortran
 )
 
 # Create alias
@@ -423,8 +118,7 @@ install(FILES ${MERGED_LIB_PATH}
     DESTINATION lib
 )
 
-# Install self-contained headers (includes all dependencies)
-install(DIRECTORY installed-headers/
+install(DIRECTORY include/
     DESTINATION include/optim
     FILES_MATCHING PATTERN "*.h"
 )
